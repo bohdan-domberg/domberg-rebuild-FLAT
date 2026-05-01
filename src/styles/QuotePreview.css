@@ -34,8 +34,7 @@
   padding: 0;
 }
 
-/* Logo: split icon (orange top) + wordmark (dark bottom).
-   Filter is defined inline in App.jsx so it's available globally. */
+/* Logo: split icon (orange top) + wordmark (dark bottom). */
 .logo-split {
   position: relative;
   display: inline-block;
@@ -258,27 +257,69 @@
   text-align: right;
 }
 
-/* Three image slots: 1 main (top, full width) + 2 detail (bottom row) */
+/* -------------------------------------------------------
+   Image slots — flexible height so images aren't cropped
+   Main:   min 32mm, max 62mm (was fixed 40mm)
+   Detail: min 16mm, max 28mm (was fixed 20mm)
+   The img-box fills the parent and uses object-fit: contain
+   so the image scales inside the box without cropping.
+   ------------------------------------------------------- */
 .img-cell-wrap {
   display: flex;
   flex-direction: column;
   gap: 2mm;
 }
+
+/* Main slot — taller range, image contained with slight padding */
 .img-main {
   width: 100%;
-  height: 40mm;
+  min-height: 32mm;
+  max-height: 62mm;
 }
+.img-main .img-box {
+  width: 100%;
+  height: 100%;
+  min-height: 32mm;
+  max-height: 62mm;
+  background: var(--warm);
+  overflow: hidden;
+}
+.img-main .img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;   /* show full image, no cropping */
+  padding: 2mm;
+  display: block;
+}
+
+/* Detail slots — proportionally shorter range */
 .img-detail-row {
   display: flex;
   gap: 2mm;
 }
 .img-detail {
   flex: 1;
-  height: 20mm;
+  min-height: 16mm;
+  max-height: 28mm;
 }
-.img-box {
+.img-detail .img-box {
   width: 100%;
   height: 100%;
+  min-height: 16mm;
+  max-height: 28mm;
+  background: var(--warm);
+  overflow: hidden;
+}
+.img-detail .img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 1.5mm;
+  display: block;
+}
+
+/* Generic img-box fallback (used elsewhere if any) */
+.img-box {
   background: var(--warm);
   display: flex;
   flex-direction: column;
@@ -286,28 +327,6 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-}
-.img-box img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 3mm;
-}
-.img-main .img-box img {
-  object-fit: cover;
-  padding: 0;
-}
-.img-placeholder-icon {
-  opacity: 0.25;
-}
-.img-placeholder-text {
-  font-size: 6pt;
-  color: #bbb;
-  text-align: center;
-  margin-top: 3px;
-  line-height: 1.35;
 }
 
 /* Item name + spec rows */
