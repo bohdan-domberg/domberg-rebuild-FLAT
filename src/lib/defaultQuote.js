@@ -25,12 +25,12 @@ export const defaultQuoteData = {
       month: 'long',
       year: 'numeric',
     }),
-    version: '1.0',
+    version: 'v1',
     reference: 'PC26-000',
-    leadTime: '120 days',
+    leadTime: '90 days',
     validity: '30 days',
-    preparedBy: 'Inna · Domberg',
-    contact: 'info@domberg.es',
+    preparedBy: 'Domberg ES',
+    contact: 'sales@domberg.es',
   },
 
   vatRate: 21,
@@ -54,11 +54,11 @@ export const defaultQuoteData = {
   terms: [
     {
       title: 'Offer Validity',
-      body: 'This commercial offer is valid for thirty (30) days from the date of issue. For stone items, validity is seven (7) days (80% prepayment; 20% prior to shipment). After expiry, a full recalculation is required.',
+      body: 'This commercial offer is valid for thirty (30) days from the date of issue. After expiry, a full recalculation is required.',
     },
     {
       title: 'Production Lead Time',
-      body: '120 calendar days from the date final measurements are taken, advance payment received, and materials, hardware, paint colours, signed specification and technical assignment approved by the client.',
+      body: '90 calendar days from the date final measurements are taken, advance payment received, and materials, hardware, paint colours, signed specification and technical assignment approved by the client.',
     },
     {
       title: 'Preliminary Document',
@@ -66,7 +66,7 @@ export const defaultQuoteData = {
     },
     {
       title: 'Cancellation & Advance Payment',
-      body: 'If, after four (4) months from signing the specification, the client cancels part or all of the order, advance payments are non-refundable. Any shortfall must be settled within five (5) calendar days of invoice.',
+      body: 'If, after three (3) months from signing the specification, the client cancels part or all of the order, advance payments are non-refundable. Any shortfall must be settled within five (5) calendar days of invoice.',
     },
     {
       title: 'Colour Consistency',
