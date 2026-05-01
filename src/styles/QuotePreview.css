@@ -561,3 +561,140 @@
     padding: 0 !important;
   }
 }
+
+/* ----------------------- ABOUT PAGE ----------------------- */
+.about-page {
+  min-height: 186mm;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  gap: 5mm;
+  padding: 6mm 10mm 5mm;
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+
+.about-header-rule {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+}
+
+.about-header-label {
+  font-size: 6.5pt;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.about-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 72mm;
+  gap: 0;
+}
+
+.about-left {
+  padding: 8mm 9mm 8mm 10mm;
+  border-right: 0.5px solid var(--border);
+}
+
+.about-headline {
+  font-family: var(--serif);
+  font-size: 26pt;
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1.05;
+  margin-bottom: 5mm;
+}
+
+.about-intro {
+  font-size: 9pt;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 6mm;
+  padding-bottom: 5mm;
+  border-bottom: 0.5px solid var(--border);
+  font-style: italic;
+}
+
+.about-blocks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5mm 8mm;
+}
+
+.about-block h3 {
+  font-size: 6.5pt;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 2mm;
+}
+
+.about-block div,
+.about-block p,
+.about-block li {
+  font-size: 8pt;
+  color: var(--ink);
+  line-height: 1.55;
+}
+
+.about-block ul {
+  padding-left: 12px;
+}
+
+.about-block li {
+  margin-bottom: 1mm;
+}
+
+/* Right column: two stacked image slots */
+.about-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.about-img-box {
+  flex: 1;
+  overflow: hidden;
+  background: var(--warm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.about-img-box:last-child {
+  border-bottom: none;
+}
+
+.about-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.about-img-placeholder {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-img-placeholder span {
+  font-size: 7pt;
+  color: #bbb;
+}
+
+@media print {
+  .about-page {
+    min-height: auto;
+    height: 210mm;
+    page-break-after: always;
+  }
+}

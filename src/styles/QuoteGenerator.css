@@ -1,6 +1,4 @@
-/* QuoteGenerator: dark sticky toolbar + split-panel editor.
-   Both toolbar and form panel are hidden during print
-   (print rules live in QuotePreview.css for centralisation). */
+/* QuoteGenerator: dark sticky toolbar + split-panel editor. */
 
 .quote-generator {
   display: flex;
@@ -9,7 +7,6 @@
   min-height: 0;
 }
 
-/* -------------------- Toolbar -------------------- */
 .generator-toolbar {
   position: sticky;
   top: 0;
@@ -68,6 +65,17 @@
   border-color: #c85505;
 }
 
+/* About Page toggle — lights up orange when active */
+.tb-btn--on {
+  background: rgba(234, 100, 6, 0.15);
+  border-color: #ea6406;
+  color: #ea6406;
+}
+
+.tb-btn--on:hover {
+  background: rgba(234, 100, 6, 0.25);
+}
+
 .tb-warn {
   font-size: 10px;
   color: #ea6406;
@@ -85,7 +93,6 @@
   white-space: nowrap;
 }
 
-/* -------------------- Split-panel layout -------------------- */
 .generator-container {
   display: grid;
   grid-template-columns: minmax(380px, 32%) 1fr;
