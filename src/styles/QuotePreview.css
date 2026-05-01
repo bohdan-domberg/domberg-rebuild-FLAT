@@ -1,0 +1,544 @@
+/* ============================================================
+   QuotePreview.css — DOMBERG quote template
+   Faithful port of the Jasmine HTML stylesheet.
+   Screen rules first, @media print rules at the bottom.
+   ============================================================ */
+
+.quote-preview {
+  --accent: #ea6406;
+  --ink: #1c1c1c;
+  --cream: #faf7f2;
+  --warm: #f2eee8;
+  --muted: #9a9490;
+  --border: #e0dbd5;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+
+  font-family: var(--sans);
+  color: var(--ink);
+  font-size: 9pt;
+  line-height: 1.4;
+  background: #d8d4cf;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.quote-preview *,
+.quote-preview *::before,
+.quote-preview *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Logo: split icon (orange top) + wordmark (dark bottom).
+   Filter is defined inline in App.jsx so it's available globally. */
+.logo-split {
+  position: relative;
+  display: inline-block;
+  vertical-align: top;
+  line-height: 0;
+}
+.logo-split img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.logo-split .logo-orange-top {
+  filter: url(#logo-orange-tint);
+  clip-path: inset(0 0 35% 0);
+}
+.logo-split .logo-dark-bottom {
+  filter: brightness(0);
+  clip-path: inset(65% 0 0 0);
+}
+
+/* Page containers */
+.quote-preview .page,
+.quote-preview .quote-section {
+  width: 269mm;
+  background: white;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.14);
+}
+
+/* ----------------------- COVER PAGE ----------------------- */
+.cover-page {
+  height: 186mm;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.cover-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 100mm 1fr;
+}
+.cover-left {
+  background: var(--cream);
+  border-left: 3px solid var(--accent);
+  padding: 9mm 9mm 7mm;
+  display: flex;
+  flex-direction: column;
+}
+.cl-top {
+  margin-bottom: auto;
+}
+.cl-rule {
+  width: 22px;
+  height: 2px;
+  background: var(--accent);
+  margin: 6mm 0;
+}
+.cl-category {
+  font-size: 7pt;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 5mm;
+}
+.cl-name {
+  font-family: var(--serif);
+  font-size: 28pt;
+  font-weight: 300;
+  line-height: 1.05;
+  color: var(--ink);
+  margin-bottom: 3mm;
+}
+.cl-loc {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12pt;
+  color: var(--muted);
+}
+.cl-client {
+  margin-top: 5mm;
+  padding-top: 5mm;
+  border-top: 0.5px solid var(--border);
+  font-size: 7.5pt;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.cover-right {
+  position: relative;
+  background: #e8e4df;
+  overflow: hidden;
+}
+.cover-right #cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cr-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.cr-placeholder svg {
+  opacity: 0.2;
+}
+.cover-upload-hint {
+  font-size: 7.5pt;
+  color: #aaa;
+  text-align: center;
+}
+.cover-footer {
+  background: var(--ink);
+  padding: 4mm 9mm;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3mm;
+  flex-shrink: 0;
+}
+.cm-item label {
+  font-size: 5.5pt;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 1px;
+}
+.cm-item span {
+  font-size: 8pt;
+  color: #ccc;
+  display: block;
+}
+
+/* ----------------------- QUOTE TABLE ----------------------- */
+.quote-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5mm 7mm 4mm;
+  border-bottom: 0.5px solid var(--border);
+}
+.qh-l {
+  display: flex;
+  align-items: center;
+  gap: 4mm;
+}
+.qh-l .ref {
+  font-size: 7pt;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.qh-r {
+  text-align: right;
+  font-size: 7pt;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.qh-r .ql {
+  font-size: 6.5pt;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+#quote-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+#quote-table thead tr {
+  background: var(--ink);
+}
+#quote-table thead th {
+  font-size: 6.5pt;
+  font-weight: 500;
+  color: white;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3mm 3mm 3mm 4mm;
+  text-align: left;
+}
+#quote-table th.r {
+  text-align: right;
+}
+.item-row td {
+  vertical-align: top;
+  padding: 3mm 3mm 3mm 4mm;
+  border-bottom: 0.5px solid var(--border);
+}
+.item-row:nth-child(even) td {
+  background: #fdfcfb;
+}
+.c-num {
+  width: 10mm;
+  font-family: var(--serif);
+  font-size: 13pt;
+  color: var(--accent);
+  font-weight: 500;
+}
+.c-img {
+  width: 88mm;
+  padding: 3mm !important;
+}
+.c-price {
+  width: 28mm;
+  text-align: right;
+}
+.c-qty {
+  width: 13mm;
+  text-align: center;
+}
+.c-total {
+  width: 28mm;
+  text-align: right;
+}
+
+/* Three image slots: 1 main (top, full width) + 2 detail (bottom row) */
+.img-cell-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2mm;
+}
+.img-main {
+  width: 100%;
+  height: 40mm;
+}
+.img-detail-row {
+  display: flex;
+  gap: 2mm;
+}
+.img-detail {
+  flex: 1;
+  height: 20mm;
+}
+.img-box {
+  width: 100%;
+  height: 100%;
+  background: var(--warm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.img-box img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 3mm;
+}
+.img-main .img-box img {
+  object-fit: cover;
+  padding: 0;
+}
+.img-placeholder-icon {
+  opacity: 0.25;
+}
+.img-placeholder-text {
+  font-size: 6pt;
+  color: #bbb;
+  text-align: center;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+/* Item name + spec rows */
+.item-name {
+  font-family: var(--serif);
+  font-size: 13pt;
+  color: var(--ink);
+  line-height: 1.15;
+  margin-bottom: 1px;
+}
+.item-sub {
+  font-size: 6.5pt;
+  color: var(--muted);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 3mm;
+}
+.spec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5mm;
+}
+.spec-row {
+  display: grid;
+  grid-template-columns: 22mm 1fr;
+  gap: 5px;
+  align-items: flex-start;
+}
+.spec-lbl {
+  font-size: 6pt;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 500;
+  padding-top: 1px;
+}
+.spec-val {
+  font-size: 8pt;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+/* Totals row beneath the table */
+.totals-wrap {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4mm 7mm 6mm;
+}
+.totals-inner {
+  width: 90mm;
+}
+.tot-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2mm 0;
+  font-size: 9pt;
+}
+.tot-row .tot-lbl {
+  color: var(--muted);
+}
+.tot-row.grand {
+  border-top: 1px solid var(--ink);
+  margin-top: 2mm;
+  padding-top: 3mm;
+  font-size: 11pt;
+  font-weight: 500;
+  color: var(--ink);
+}
+.tot-row.grand .tot-lbl {
+  color: var(--ink);
+}
+
+/* ----------------------- TERMS PAGE ----------------------- */
+.terms-page {
+  min-height: 186mm;
+  padding: 14mm 16mm;
+}
+.terms-ttl {
+  font-family: var(--serif);
+  font-size: 22pt;
+  font-weight: 300;
+  color: var(--ink);
+  margin-bottom: 8mm;
+  border-bottom: 0.5px solid var(--border);
+  padding-bottom: 4mm;
+}
+.terms-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7mm 10mm;
+}
+.terms-block h3 {
+  font-size: 7pt;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 2mm;
+}
+.terms-block p,
+.terms-block div,
+.terms-block li {
+  font-size: 8pt;
+  color: var(--ink);
+  line-height: 1.55;
+}
+.terms-block ul {
+  padding-left: 14px;
+}
+.terms-block li {
+  margin-bottom: 1mm;
+}
+
+/* ----------------------- BACK PAGE ----------------------- */
+.back-page {
+  height: 186mm;
+  background: var(--cream);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8mm;
+}
+.back-rule {
+  width: 30px;
+  height: 2px;
+  background: var(--accent);
+}
+.back-contact {
+  font-size: 8pt;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.8;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   PRINT — A4 LANDSCAPE, FULL BLEED
+   ============================================================ */
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  html,
+  body {
+    background: white !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hide everything outside the preview while printing */
+  body > *:not(#root) {
+    display: none !important;
+  }
+  .app-header,
+  .generator-toolbar,
+  .form-panel,
+  .preview-header {
+    display: none !important;
+  }
+  .app,
+  .app-main,
+  .quote-generator,
+  .generator-container,
+  .preview-panel,
+  .preview-content {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    width: 297mm !important;
+    overflow: visible !important;
+  }
+
+  .quote-preview {
+    background: white !important;
+    padding: 0 !important;
+    width: 297mm;
+    margin: 0 auto;
+    display: block;
+    gap: 0;
+  }
+  .quote-preview .page,
+  .quote-preview .quote-section {
+    width: 297mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+  .cover-page {
+    height: 210mm !important;
+    page-break-after: always;
+  }
+  .back-page {
+    height: 210mm !important;
+    page-break-before: always;
+  }
+  .terms-page {
+    min-height: auto;
+    padding: 14mm 16mm !important;
+    page-break-before: always;
+  }
+  .quote-section {
+    page-break-after: always;
+  }
+  thead {
+    display: table-header-group;
+  }
+  #quote-table {
+    page-break-inside: auto;
+  }
+  .item-row {
+    page-break-inside: avoid;
+  }
+  .totals-wrap {
+    page-break-inside: avoid;
+  }
+
+  /* Hide image columns entirely on items with no images uploaded */
+  #quote-table:not(.has-images) .c-img,
+  #quote-table:not(.has-images) .th-img {
+    display: none !important;
+    width: 0 !important;
+    padding: 0 !important;
+  }
+}

@@ -1,0 +1,243 @@
+import { useState, useEffect, useRef } from 'react';
+import QuoteForm from './QuoteForm';
+import QuotePreview from './QuotePreview';
+import { defaultQuoteData } from '../lib/defaultQuote';
+import '../styles/QuoteGenerator.css';
+
+/**
+ * QuoteGenerator — the editor shell.
+ *
+ * Owns the entire quote state (a single object that mirrors the Jasmine
+ * structure: cover, meta, items, terms, vatRate). The form mutates state;
+ * the preview renders it. Print uses the browser's native print (window.print)
+ * which produces a higher-fidelity PDF than html2pdf.js for this template.
+ *
+ * Phase 2 will swap localStorage autosave for Supabase + image storage.
+ */
+const QuoteGenerator = () => {
+  const [quoteData, setQuoteData] = useState(defaultQuoteData);
+  const [savedAt, setSavedAt] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // -------------------- Totals (recalc on items / VAT change) --------------------
+  const subtotal = quoteData.items.reduce(
+    (sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 1),
+    0
+  );
+  const iva = subtotal * (Number(quoteData.vatRate) || 0) / 100;
+  const total = subtotal + iva;
+  const totals = { subtotal, iva, total };
+
+  // -------------------- Local autosave (last edit) --------------------
+  // Saves the working draft to localStorage so a refresh doesn't lose work.
+  // Named saves and AI-fill imports go through the toolbar buttons.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          'domberg_quote_autosave',
+          JSON.stringify(quoteData)
+        );
+        setSavedAt(new Date());
+      } catch (e) {
+        // ignore quota errors — Phase 2 moves storage off the browser
+      }
+    }, 800);
+    return () => clearTimeout(id);
+  }, [quoteData]);
+
+  // On first load, offer to restore the last autosaved draft.
+  useEffect(() => {
+    const raw = localStorage.getItem('domberg_quote_autosave');
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.items && parsed.cover) {
+        // Only restore if it differs from the seeded default (i.e. the user
+        // had actually been working on something).
+        if (
+          parsed.cover.projectName !== defaultQuoteData.cover.projectName ||
+          parsed.items.length !== defaultQuoteData.items.length
+        ) {
+          if (window.confirm('Restore your last unsaved draft?')) {
+            setQuoteData(parsed);
+          }
+        }
+      }
+    } catch (e) {
+      // corrupt autosave — ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // -------------------- Toolbar actions --------------------
+  const handlePrint = () => window.print();
+
+  const handleExport = () => {
+    const json = JSON.stringify(quoteData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = (quoteData.cover.projectName || 'quote')
+      .replace(/[^a-zA-Z0-9 _-]/g, '')
+      .replace(/\s+/g, '-')
+      .toLowerCase();
+    a.href = url;
+    a.download = `domberg-${safeName || 'quote'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleImportFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        let text = String(evt.target.result || '');
+        // Strip UTF-8 BOM if present
+        if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+        const data = JSON.parse(text.trim());
+        if (typeof data !== 'object' || !data.items) {
+          window.alert('That JSON does not look like a Domberg quote.');
+          return;
+        }
+        if (
+          window.confirm(
+            'Replace the current quote with the imported data?'
+          )
+        ) {
+          // Merge with defaults so missing fields don't break the renderer.
+          setQuoteData({
+            ...defaultQuoteData,
+            ...data,
+            cover: { ...defaultQuoteData.cover, ...(data.cover || {}) },
+            meta: { ...defaultQuoteData.meta, ...(data.meta || {}) },
+          });
+        }
+      } catch (err) {
+        window.alert('Import failed: ' + err.message);
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+    // Reset so the same file can be re-imported
+    e.target.value = '';
+  };
+
+  const handleNewQuote = () => {
+    if (
+      window.confirm(
+        'Start a fresh quote? Unsaved changes to the current quote will be lost.'
+      )
+    ) {
+      setQuoteData(defaultQuoteData);
+    }
+  };
+
+  const handleAddItem = () => {
+    const newItem = {
+      id: Date.now(),
+      name: 'New Item',
+      sub: '',
+      specs: [
+        { label: 'Dimensions', value: '' },
+        { label: 'Materials', value: '' },
+        { label: 'Hardware', value: '' },
+      ],
+      price: 0,
+      qty: 1,
+      images: { main: null, detail1: null, detail2: null },
+    };
+    setQuoteData({ ...quoteData, items: [...quoteData.items, newItem] });
+  };
+
+  return (
+    <div className="quote-generator">
+      <div className="generator-toolbar">
+        <span className="tb-brand">Domberg Quote Generator</span>
+        <span className="tb-sep" />
+
+        <button
+          className="tb-btn"
+          onClick={handleNewQuote}
+          title="Start a fresh quote"
+        >
+          New
+        </button>
+        <button
+          className="tb-btn"
+          onClick={handleAddItem}
+          title="Add an item to the schedule"
+        >
+          + Item
+        </button>
+
+        <span className="tb-sep" />
+
+        <button
+          className="tb-btn"
+          onClick={handleImportClick}
+          title="Import a JSON quote (e.g. from AI fill-in)"
+        >
+          Import JSON
+        </button>
+        <button
+          className="tb-btn"
+          onClick={handleExport}
+          title="Download the current quote as JSON"
+        >
+          Export JSON
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={handleImportFile}
+          style={{ display: 'none' }}
+        />
+
+        <span className="tb-sep" />
+
+        <button
+          className="tb-btn tb-btn--primary"
+          onClick={handlePrint}
+          title="Print to PDF (Margins=None, Background graphics=ON)"
+        >
+          Print to PDF
+        </button>
+
+        <span className="tb-warn">
+          Chrome print: Margins = None &amp; Background graphics = ON
+        </span>
+
+        {savedAt && (
+          <span className="tb-saved">
+            Saved {savedAt.toLocaleTimeString()}
+          </span>
+        )}
+      </div>
+
+      <div className="generator-container">
+        <div className="form-panel">
+          <QuoteForm quoteData={quoteData} onChange={setQuoteData} />
+        </div>
+
+        <div className="preview-panel">
+          <div className="preview-header">
+            <span>Live preview</span>
+            <small>· edits appear instantly</small>
+          </div>
+          <div className="preview-content">
+            <QuotePreview quoteData={quoteData} totals={totals} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default QuoteGenerator;

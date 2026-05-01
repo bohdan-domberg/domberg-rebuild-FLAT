@@ -1,0 +1,364 @@
+/* QuoteForm — tabbed editor inside the left form panel. */
+
+.quote-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* -------------------- Tabs -------------------- */
+.form-tabs {
+  display: flex;
+  border-bottom: 1px solid #e0dbd5;
+  background: #fafaf9;
+  padding: 0 8px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  padding: 11px 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9a9490;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover {
+  color: #1c1c1c;
+}
+
+.tab-btn.active {
+  color: #ea6406;
+  border-bottom-color: #ea6406;
+}
+
+/* -------------------- Body -------------------- */
+.form-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px 32px;
+}
+
+.form-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 18pt;
+  font-weight: 400;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0dbd5;
+  color: #1c1c1c;
+}
+
+.form-section {
+  margin-bottom: 22px;
+}
+
+.form-section h4 {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #ea6406;
+  margin-bottom: 10px;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.empty-hint {
+  font-size: 12px;
+  color: #9a9490;
+  padding: 16px;
+  background: #fafaf9;
+  border-radius: 3px;
+  text-align: center;
+}
+
+/* -------------------- Field (label + input + hint) -------------------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.field-label {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: #1c1c1c;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.field input,
+.field textarea,
+.spec-edit-label,
+.spec-edit-value {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #e0dbd5;
+  border-radius: 2px;
+  font-size: 12px;
+  color: #1c1c1c;
+  background: white;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field input:focus,
+.field textarea:focus,
+.spec-edit-label:focus,
+.spec-edit-value:focus {
+  outline: none;
+  border-color: #ea6406;
+  box-shadow: 0 0 0 2px rgba(234, 100, 6, 0.12);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 38px;
+}
+
+.hint {
+  font-size: 10px;
+  color: #9a9490;
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
+/* -------------------- Item cards -------------------- */
+.item-card,
+.terms-card {
+  margin-bottom: 18px;
+  padding: 14px;
+  background: #fafaf9;
+  border: 1px solid #e0dbd5;
+  border-radius: 3px;
+}
+
+.item-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0dbd5;
+}
+
+.item-card-header h4 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #1c1c1c;
+}
+
+.btn-remove {
+  background: none;
+  border: 1px solid transparent;
+  color: #9a9490;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+
+.btn-remove:hover {
+  color: #d94a4a;
+  border-color: #d94a4a;
+}
+
+.btn-remove-small {
+  background: none;
+  border: 1px solid #e0dbd5;
+  color: #9a9490;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  transition: all 0.15s;
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+.btn-remove-small:hover {
+  color: #d94a4a;
+  border-color: #d94a4a;
+}
+
+/* -------------------- Spec rows -------------------- */
+.spec-block {
+  margin-bottom: 12px;
+}
+
+.spec-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: #1c1c1c;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.spec-edit-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 28px;
+  gap: 6px;
+  margin-bottom: 6px;
+  align-items: start;
+}
+
+.spec-edit-label {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 10px !important;
+  color: #ea6406 !important;
+  font-weight: 500;
+}
+
+.spec-edit-value {
+  font-size: 11px !important;
+  resize: vertical;
+  min-height: 38px;
+  font-family: inherit;
+}
+
+.spec-edit-row .btn-remove-small {
+  margin-top: 0;
+  padding: 6px 6px;
+  text-align: center;
+}
+
+.btn-add-spec,
+.btn-add-block {
+  background: none;
+  border: 1px dashed #e0dbd5;
+  color: #9a9490;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 5px 12px;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+
+.btn-add-spec:hover,
+.btn-add-block:hover {
+  border-color: #ea6406;
+  color: #ea6406;
+  background: #fff8f3;
+}
+
+.btn-add-block {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+/* -------------------- Pricing line total -------------------- */
+.line-total {
+  font-size: 11px;
+  color: #9a9490;
+  text-align: right;
+  margin: 8px 0 14px;
+  padding: 6px 0;
+  border-top: 1px solid #e0dbd5;
+  border-bottom: 1px solid #e0dbd5;
+}
+
+.line-total strong {
+  color: #ea6406;
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+/* -------------------- Image slots (3 per item) -------------------- */
+.image-block h5 {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #1c1c1c;
+  margin-bottom: 8px;
+}
+
+.image-slots {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.image-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: white;
+  border: 1px solid #e0dbd5;
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.image-slot-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #ea6406;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.image-slot input[type='file'] {
+  font-size: 10px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.image-slot-preview {
+  width: 100%;
+  height: 70px;
+  background: #f2eee8;
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-slot-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Cover image preview is bigger */
+.image-preview {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+  padding: 8px;
+  background: white;
+  border: 1px solid #e0dbd5;
+  border-radius: 3px;
+}
+
+.image-preview img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  background: #f2eee8;
+}

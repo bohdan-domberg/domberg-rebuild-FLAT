@@ -1,0 +1,143 @@
+/* QuoteGenerator: dark sticky toolbar + split-panel editor.
+   Both toolbar and form panel are hidden during print
+   (print rules live in QuotePreview.css for centralisation). */
+
+.quote-generator {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* -------------------- Toolbar -------------------- */
+.generator-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: #1c1c1c;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #000;
+}
+
+.tb-brand {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 14pt;
+  font-weight: 400;
+  color: #ea6406;
+  letter-spacing: 0.3px;
+  margin-right: 6px;
+}
+
+.tb-sep {
+  width: 1px;
+  height: 18px;
+  background: #3a3a3a;
+  margin: 0 3px;
+}
+
+.tb-btn {
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  color: #aaa;
+  padding: 5px 11px;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 2px;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.tb-btn:hover {
+  background: #2a2a2a;
+  color: white;
+  border-color: #555;
+}
+
+.tb-btn--primary {
+  background: #ea6406;
+  border-color: #ea6406;
+  color: white;
+}
+
+.tb-btn--primary:hover {
+  background: #c85505;
+  border-color: #c85505;
+}
+
+.tb-warn {
+  font-size: 10px;
+  color: #ea6406;
+  background: rgba(234, 100, 6, 0.12);
+  padding: 4px 8px;
+  border-radius: 2px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.tb-saved {
+  font-size: 10px;
+  color: #4a9;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+/* -------------------- Split-panel layout -------------------- */
+.generator-container {
+  display: grid;
+  grid-template-columns: minmax(380px, 32%) 1fr;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.form-panel {
+  background: white;
+  border-right: 1px solid #e0dbd5;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: #d8d4cf;
+}
+
+.preview-header {
+  padding: 8px 14px;
+  border-bottom: 1px solid #e0dbd5;
+  background: #efece7;
+  font-size: 11px;
+  color: #1c1c1c;
+  letter-spacing: 0.3px;
+}
+
+.preview-header small {
+  color: #9a9490;
+  margin-left: 4px;
+}
+
+.preview-content {
+  flex: 1;
+  overflow: auto;
+  background: #d8d4cf;
+}
+
+@media (max-width: 1100px) {
+  .generator-container {
+    grid-template-columns: 1fr;
+  }
+  .form-panel {
+    border-right: none;
+    border-bottom: 1px solid #e0dbd5;
+    max-height: 50vh;
+  }
+}
