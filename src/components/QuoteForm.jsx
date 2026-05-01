@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import '../styles/QuoteForm.css';
 
 /**
@@ -9,6 +9,121 @@ import '../styles/QuoteForm.css';
  * mutated copy — so React re-renders cleanly. Image uploads convert files
  * to base64 data URLs (Phase 2 will swap this for Supabase Storage URLs).
  */
+
+// -------------------- RichField toolbar --------------------
+// Wraps a textarea with a B / I / U toolbar.
+// When text is selected, it wraps the selection in the tag.
+// When nothing is selected, it inserts the tag pair with cursor inside.
+const RichField = ({ label, hint, value, onChange, rows = 2 }) => {
+  const textareaRef = useRef(null);
+
+  const applyTag = useCallback(
+    (openTag, closeTag) => {
+      const el = textareaRef.current;
+      if (!el) return;
+
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const selected = value.slice(start, end);
+
+      let newValue;
+      let cursorStart;
+      let cursorEnd;
+
+      if (selected) {
+        // Wrap selection
+        newValue =
+          value.slice(0, start) +
+          openTag +
+          selected +
+          closeTag +
+          value.slice(end);
+        cursorStart = start + openTag.length;
+        cursorEnd = cursorStart + selected.length;
+      } else {
+        // Insert tags, cursor between them
+        newValue =
+          value.slice(0, start) + openTag + closeTag + value.slice(start);
+        cursorStart = start + openTag.length;
+        cursorEnd = cursorStart;
+      }
+
+      onChange(newValue);
+
+      // Restore focus + cursor position after React re-render
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(cursorStart, cursorEnd);
+      });
+    },
+    [value, onChange]
+  );
+
+  const handleKeyDown = (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'b') {
+        e.preventDefault();
+        applyTag('<strong>', '</strong>');
+      } else if (e.key === 'i') {
+        e.preventDefault();
+        applyTag('<em>', '</em>');
+      } else if (e.key === 'u') {
+        e.preventDefault();
+        applyTag('<u>', '</u>');
+      }
+    }
+  };
+
+  return (
+    <label className="field">
+      <span className="field-label">{label}</span>
+      <div className="rich-toolbar">
+        <button
+          type="button"
+          className="rt-btn"
+          title="Bold — Ctrl+B"
+          onMouseDown={(e) => {
+            e.preventDefault(); // don't blur the textarea
+            applyTag('<strong>', '</strong>');
+          }}
+        >
+          <strong>B</strong>
+        </button>
+        <button
+          type="button"
+          className="rt-btn"
+          title="Italic — Ctrl+I"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            applyTag('<em>', '</em>');
+          }}
+        >
+          <em>I</em>
+        </button>
+        <button
+          type="button"
+          className="rt-btn"
+          title="Underline — Ctrl+U"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            applyTag('<u>', '</u>');
+          }}
+        >
+          <u>U</u>
+        </button>
+      </div>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        rows={rows}
+      />
+      {hint && <small className="hint">{hint}</small>}
+    </label>
+  );
+};
+
 const QuoteForm = ({ quoteData, onChange }) => {
   const [tab, setTab] = useState('cover');
 
@@ -280,7 +395,7 @@ const QuoteForm = ({ quoteData, onChange }) => {
 
             {quoteData.items.length === 0 && (
               <div className="empty-hint">
-                No items yet. Use the “+ Item” button in the toolbar.
+                No items yet. Use the "+ Item" button in the toolbar.
               </div>
             )}
 
@@ -297,27 +412,17 @@ const QuoteForm = ({ quoteData, onChange }) => {
                   </button>
                 </div>
 
-                <Field label="Name">
-                  <input
-                    type="text"
-                    value={item.name}
-                    onChange={(e) =>
-                      updateItem(item.id, { name: e.target.value })
-                    }
-                  />
-                </Field>
-                <Field
+                <RichField
+                  label="Name"
+                  value={item.name || ''}
+                  onChange={(v) => updateItem(item.id, { name: v })}
+                />
+                <RichField
                   label="Subtitle / category"
                   hint="Shows in small caps below the name. Optional."
-                >
-                  <input
-                    type="text"
-                    value={item.sub || ''}
-                    onChange={(e) =>
-                      updateItem(item.id, { sub: e.target.value })
-                    }
-                  />
-                </Field>
+                  value={item.sub || ''}
+                  onChange={(v) => updateItem(item.id, { sub: v })}
+                />
 
                 {/* ----- Specs (flexible, label is editable) ----- */}
                 <div className="spec-block">
@@ -341,14 +446,11 @@ const QuoteForm = ({ quoteData, onChange }) => {
                         placeholder="Label (e.g. Materials)"
                         className="spec-edit-label"
                       />
-                      <textarea
-                        value={spec.value}
-                        onChange={(e) =>
-                          updateSpec(item.id, sidx, 'value', e.target.value)
+                      <SpecValueField
+                        value={spec.value || ''}
+                        onChange={(v) =>
+                          updateSpec(item.id, sidx, 'value', v)
                         }
-                        placeholder="Detail…"
-                        rows="2"
-                        className="spec-edit-value"
                       />
                       <button
                         className="btn-remove-small"
@@ -466,18 +568,13 @@ const QuoteForm = ({ quoteData, onChange }) => {
                     }
                   />
                 </Field>
-                <Field
+                <RichField
                   label="Body"
-                  hint="HTML allowed: use <ul><li>… for bullets, <strong> for bold."
-                >
-                  <textarea
-                    value={block.body}
-                    onChange={(e) =>
-                      updateTerm(idx, { body: e.target.value })
-                    }
-                    rows="5"
-                  />
-                </Field>
+                  hint="B/I/U buttons or Ctrl+B/I/U. Also: <ul><li>… for bullets."
+                  value={block.body}
+                  onChange={(v) => updateTerm(idx, { body: v })}
+                  rows={5}
+                />
               </div>
             ))}
 
@@ -518,7 +615,7 @@ const QuoteForm = ({ quoteData, onChange }) => {
   );
 };
 
-// --- Tiny presentational helpers ---
+// --- Plain Field (no toolbar) ---
 const Field = ({ label, hint, children }) => (
   <label className="field">
     <span className="field-label">{label}</span>
@@ -526,6 +623,75 @@ const Field = ({ label, hint, children }) => (
     {hint && <small className="hint">{hint}</small>}
   </label>
 );
+
+// --- Spec value field: inline B/I/U toolbar without the label wrapper ---
+// Used inside the spec-edit-row grid where the label column is separate.
+const SpecValueField = ({ value, onChange }) => {
+  const textareaRef = useRef(null);
+
+  const applyTag = useCallback(
+    (openTag, closeTag) => {
+      const el = textareaRef.current;
+      if (!el) return;
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const selected = value.slice(start, end);
+      let newValue, cursorStart, cursorEnd;
+      if (selected) {
+        newValue =
+          value.slice(0, start) + openTag + selected + closeTag + value.slice(end);
+        cursorStart = start + openTag.length;
+        cursorEnd = cursorStart + selected.length;
+      } else {
+        newValue = value.slice(0, start) + openTag + closeTag + value.slice(start);
+        cursorStart = start + openTag.length;
+        cursorEnd = cursorStart;
+      }
+      onChange(newValue);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(cursorStart, cursorEnd);
+      });
+    },
+    [value, onChange]
+  );
+
+  const handleKeyDown = (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'b') { e.preventDefault(); applyTag('<strong>', '</strong>'); }
+      else if (e.key === 'i') { e.preventDefault(); applyTag('<em>', '</em>'); }
+      else if (e.key === 'u') { e.preventDefault(); applyTag('<u>', '</u>'); }
+    }
+  };
+
+  return (
+    <div className="spec-value-wrap">
+      <div className="rich-toolbar rich-toolbar--inline">
+        <button type="button" className="rt-btn" title="Bold — Ctrl+B"
+          onMouseDown={(e) => { e.preventDefault(); applyTag('<strong>', '</strong>'); }}>
+          <strong>B</strong>
+        </button>
+        <button type="button" className="rt-btn" title="Italic — Ctrl+I"
+          onMouseDown={(e) => { e.preventDefault(); applyTag('<em>', '</em>'); }}>
+          <em>I</em>
+        </button>
+        <button type="button" className="rt-btn" title="Underline — Ctrl+U"
+          onMouseDown={(e) => { e.preventDefault(); applyTag('<u>', '</u>'); }}>
+          <u>U</u>
+        </button>
+      </div>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Detail…"
+        rows={2}
+        className="spec-edit-value"
+      />
+    </div>
+  );
+};
 
 const ImageSlot = ({ label, hint, value, onUpload, onClear }) => (
   <div className="image-slot">
