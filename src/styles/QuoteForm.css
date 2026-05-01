@@ -362,3 +362,59 @@
   object-fit: contain;
   background: #f2eee8;
 }
+
+/* -------------------- Rich text toolbar (B / I / U) -------------------- */
+
+/* Toolbar sits between the field label and the textarea */
+.rich-toolbar {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 3px;
+}
+
+/* Inline variant used inside spec-edit-row (no label wrapper) */
+.rich-toolbar--inline {
+  margin-bottom: 2px;
+}
+
+.rt-btn {
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #e0dbd5;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #1c1c1c;
+  line-height: 1;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  font-family: inherit;
+}
+
+.rt-btn:hover {
+  background: #fff8f3;
+  border-color: #ea6406;
+  color: #ea6406;
+}
+
+.rt-btn:active {
+  background: #ea6406;
+  border-color: #ea6406;
+  color: white;
+}
+
+/* Spec value field wraps toolbar + textarea as a column */
+.spec-value-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.spec-value-wrap .spec-edit-value {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
