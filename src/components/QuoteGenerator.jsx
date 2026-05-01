@@ -4,22 +4,12 @@ import QuotePreview from './QuotePreview';
 import { defaultQuoteData } from '../lib/defaultQuote';
 import '../styles/QuoteGenerator.css';
 
-/**
- * QuoteGenerator — the editor shell.
- *
- * Owns the entire quote state (a single object that mirrors the Jasmine
- * structure: cover, meta, items, terms, vatRate). The form mutates state;
- * the preview renders it. Print uses the browser's native print (window.print)
- * which produces a higher-fidelity PDF than html2pdf.js for this template.
- *
- * Phase 2 will swap localStorage autosave for Supabase + image storage.
- */
 const QuoteGenerator = () => {
   const [quoteData, setQuoteData] = useState(defaultQuoteData);
   const [savedAt, setSavedAt] = useState(null);
   const fileInputRef = useRef(null);
 
-  // -------------------- Totals (recalc on items / VAT change) --------------------
+  // -------------------- Totals --------------------
   const subtotal = quoteData.items.reduce(
     (sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 1),
     0
@@ -28,49 +18,43 @@ const QuoteGenerator = () => {
   const total = subtotal + iva;
   const totals = { subtotal, iva, total };
 
-  // -------------------- Local autosave (last edit) --------------------
-  // Saves the working draft to localStorage so a refresh doesn't lose work.
-  // Named saves and AI-fill imports go through the toolbar buttons.
+  // -------------------- Autosave --------------------
   useEffect(() => {
     const id = setTimeout(() => {
       try {
-        localStorage.setItem(
-          'domberg_quote_autosave',
-          JSON.stringify(quoteData)
-        );
+        localStorage.setItem('domberg_quote_autosave', JSON.stringify(quoteData));
         setSavedAt(new Date());
-      } catch (e) {
-        // ignore quota errors — Phase 2 moves storage off the browser
-      }
+      } catch (e) {}
     }, 800);
     return () => clearTimeout(id);
   }, [quoteData]);
 
-  // On first load, offer to restore the last autosaved draft.
   useEffect(() => {
     const raw = localStorage.getItem('domberg_quote_autosave');
     if (!raw) return;
     try {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.items && parsed.cover) {
-        // Only restore if it differs from the seeded default (i.e. the user
-        // had actually been working on something).
         if (
           parsed.cover.projectName !== defaultQuoteData.cover.projectName ||
           parsed.items.length !== defaultQuoteData.items.length
         ) {
           if (window.confirm('Restore your last unsaved draft?')) {
-            setQuoteData(parsed);
+            setQuoteData({
+              ...defaultQuoteData,
+              ...parsed,
+              aboutPage: { ...defaultQuoteData.aboutPage, ...(parsed.aboutPage || {}) },
+              cover: { ...defaultQuoteData.cover, ...(parsed.cover || {}) },
+              meta: { ...defaultQuoteData.meta, ...(parsed.meta || {}) },
+            });
           }
         }
       }
-    } catch (e) {
-      // corrupt autosave — ignore
-    }
+    } catch (e) {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // -------------------- Toolbar actions --------------------
+  // -------------------- Actions --------------------
   const handlePrint = () => window.print();
 
   const handleExport = () => {
@@ -99,22 +83,17 @@ const QuoteGenerator = () => {
     reader.onload = (evt) => {
       try {
         let text = String(evt.target.result || '');
-        // Strip UTF-8 BOM if present
         if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
         const data = JSON.parse(text.trim());
         if (typeof data !== 'object' || !data.items) {
           window.alert('That JSON does not look like a Domberg quote.');
           return;
         }
-        if (
-          window.confirm(
-            'Replace the current quote with the imported data?'
-          )
-        ) {
-          // Merge with defaults so missing fields don't break the renderer.
+        if (window.confirm('Replace the current quote with the imported data?')) {
           setQuoteData({
             ...defaultQuoteData,
             ...data,
+            aboutPage: { ...defaultQuoteData.aboutPage, ...(data.aboutPage || {}) },
             cover: { ...defaultQuoteData.cover, ...(data.cover || {}) },
             meta: { ...defaultQuoteData.meta, ...(data.meta || {}) },
           });
@@ -124,16 +103,11 @@ const QuoteGenerator = () => {
       }
     };
     reader.readAsText(file, 'utf-8');
-    // Reset so the same file can be re-imported
     e.target.value = '';
   };
 
   const handleNewQuote = () => {
-    if (
-      window.confirm(
-        'Start a fresh quote? Unsaved changes to the current quote will be lost.'
-      )
-    ) {
+    if (window.confirm('Start a fresh quote? Unsaved changes will be lost.')) {
       setQuoteData(defaultQuoteData);
     }
   };
@@ -155,41 +129,47 @@ const QuoteGenerator = () => {
     setQuoteData({ ...quoteData, items: [...quoteData.items, newItem] });
   };
 
+  const toggleAboutPage = () => {
+    setQuoteData({
+      ...quoteData,
+      aboutPage: {
+        ...quoteData.aboutPage,
+        enabled: !quoteData.aboutPage?.enabled,
+      },
+    });
+  };
+
+  const aboutEnabled = quoteData.aboutPage?.enabled ?? false;
+
   return (
     <div className="quote-generator">
       <div className="generator-toolbar">
         <span className="tb-brand">Domberg Quote Generator</span>
         <span className="tb-sep" />
 
-        <button
-          className="tb-btn"
-          onClick={handleNewQuote}
-          title="Start a fresh quote"
-        >
+        <button className="tb-btn" onClick={handleNewQuote} title="Start a fresh quote">
           New
         </button>
-        <button
-          className="tb-btn"
-          onClick={handleAddItem}
-          title="Add an item to the schedule"
-        >
+        <button className="tb-btn" onClick={handleAddItem} title="Add an item to the schedule">
           + Item
         </button>
 
         <span className="tb-sep" />
 
         <button
-          className="tb-btn"
-          onClick={handleImportClick}
-          title="Import a JSON quote (e.g. from AI fill-in)"
+          className={`tb-btn${aboutEnabled ? ' tb-btn--on' : ''}`}
+          onClick={toggleAboutPage}
+          title="Show or hide the About Domberg page in the quote"
         >
+          {aboutEnabled ? '✓ About Page' : 'About Page'}
+        </button>
+
+        <span className="tb-sep" />
+
+        <button className="tb-btn" onClick={handleImportClick} title="Import a JSON quote">
           Import JSON
         </button>
-        <button
-          className="tb-btn"
-          onClick={handleExport}
-          title="Download the current quote as JSON"
-        >
+        <button className="tb-btn" onClick={handleExport} title="Download as JSON">
           Export JSON
         </button>
         <input
@@ -215,9 +195,7 @@ const QuoteGenerator = () => {
         </span>
 
         {savedAt && (
-          <span className="tb-saved">
-            Saved {savedAt.toLocaleTimeString()}
-          </span>
+          <span className="tb-saved">Saved {savedAt.toLocaleTimeString()}</span>
         )}
       </div>
 

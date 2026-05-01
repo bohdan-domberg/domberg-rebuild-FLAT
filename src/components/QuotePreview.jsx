@@ -1,16 +1,6 @@
 import { forwardRef } from 'react';
 import '../styles/QuotePreview.css';
 
-/**
- * QuotePreview — faithful port of the Jasmine HTML quote template.
- *
- * Structure mirrors the original:
- *   1. Cover page          (split logo, project info, cover image, 6-cell footer)
- *   2. Quote section       (single shared table, all items with 3 image slots each)
- *   3. Totals row          (subtotal / IVA / grand total — inside the quote section)
- *   4. Terms page          (6 editable blocks)
- *   5. Back page           (logo + contact line)
- */
 const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
   const euro = (n) =>
     'EUR ' +
@@ -19,25 +9,21 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
       maximumFractionDigits: 2,
     });
 
-  const { cover, meta, items, vatRate, terms } = quoteData;
+  const { cover, meta, items, vatRate, terms, aboutPage } = quoteData;
   const hasImages = items.some(
     (i) => i.images && (i.images.main || i.images.detail1 || i.images.detail2)
   );
 
-  // Reusable split logo (orange icon top, dark wordmark bottom).
   const SplitLogo = ({ size = 200 }) => (
     <div className="logo-split" style={{ height: size, width: size }}>
       <img src="/domberg-logo.svg" className="logo-orange-top" alt="" />
-      <img
-        src="/domberg-logo.svg"
-        className="logo-dark-bottom"
-        alt="Domberg"
-      />
+      <img src="/domberg-logo.svg" className="logo-dark-bottom" alt="Domberg" />
     </div>
   );
 
   return (
     <div ref={ref} className="quote-preview">
+
       {/* ============================== COVER ============================== */}
       <div className="page cover-page">
         <div className="cover-body">
@@ -64,34 +50,10 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
               <img id="cover-img" src={cover.coverImage} alt="" />
             ) : (
               <div className="cr-placeholder">
-                <svg
-                  width="60"
-                  height="52"
-                  viewBox="0 0 60 52"
-                  fill="none"
-                >
-                  <rect
-                    x="2"
-                    y="2"
-                    width="56"
-                    height="44"
-                    rx="3"
-                    stroke="#999"
-                    strokeWidth="1.5"
-                  />
-                  <circle
-                    cx="16"
-                    cy="16"
-                    r="6"
-                    stroke="#999"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M2 38 L16 24 L28 34 L40 22 L58 40"
-                    stroke="#999"
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                  />
+                <svg width="60" height="52" viewBox="0 0 60 52" fill="none">
+                  <rect x="2" y="2" width="56" height="44" rx="3" stroke="#999" strokeWidth="1.5" />
+                  <circle cx="16" cy="16" r="6" stroke="#999" strokeWidth="1.5" />
+                  <path d="M2 38 L16 24 L28 34 L40 22 L58 40" stroke="#999" strokeWidth="1.5" strokeLinejoin="round" />
                 </svg>
                 <p className="cover-upload-hint">Cover image</p>
               </div>
@@ -99,32 +61,65 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
           </div>
         </div>
         <div className="cover-footer">
-          <div className="cm-item">
-            <label>Date</label>
-            <span>{meta.date}</span>
-          </div>
-          <div className="cm-item">
-            <label>Version</label>
-            <span>{meta.version}</span>
-          </div>
-          <div className="cm-item">
-            <label>Lead Time</label>
-            <span>{meta.leadTime}</span>
-          </div>
-          <div className="cm-item">
-            <label>Validity</label>
-            <span>{meta.validity}</span>
-          </div>
-          <div className="cm-item">
-            <label>Prepared by</label>
-            <span>{meta.preparedBy}</span>
-          </div>
-          <div className="cm-item">
-            <label>Contact</label>
-            <span>{meta.contact}</span>
-          </div>
+          <div className="cm-item"><label>Date</label><span>{meta.date}</span></div>
+          <div className="cm-item"><label>Version</label><span>{meta.version}</span></div>
+          <div className="cm-item"><label>Lead Time</label><span>{meta.leadTime}</span></div>
+          <div className="cm-item"><label>Validity</label><span>{meta.validity}</span></div>
+          <div className="cm-item"><label>Prepared by</label><span>{meta.preparedBy}</span></div>
+          <div className="cm-item"><label>Contact</label><span>{meta.contact}</span></div>
         </div>
       </div>
+
+      {/* ============================== ABOUT PAGE (optional) ============================== */}
+      {aboutPage?.enabled && (
+        <div className="page about-page">
+          <div className="about-header">
+            <SplitLogo size={32} />
+            <div className="about-header-rule" />
+            <div className="about-header-label">About Domberg</div>
+          </div>
+
+          <div className="about-body">
+            {/* Left column: headline + intro + text blocks */}
+            <div className="about-left">
+              <h2 className="about-headline">
+                {aboutPage.headline || 'Craftsmanship Since 1947'}
+              </h2>
+              {aboutPage.intro && (
+                <p className="about-intro">{aboutPage.intro}</p>
+              )}
+              <div className="about-blocks">
+                {(aboutPage.blocks || []).map((block, i) => (
+                  <div key={i} className="about-block">
+                    <h3>{block.title}</h3>
+                    <div dangerouslySetInnerHTML={{ __html: block.body }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right column: up to 2 images */}
+            <div className="about-right">
+              {(aboutPage.images || []).map((src, i) =>
+                src ? (
+                  <div key={i} className="about-img-box">
+                    <img src={src} alt="" />
+                  </div>
+                ) : (
+                  <div key={i} className="about-img-box about-img-placeholder">
+                    <svg width="36" height="30" viewBox="0 0 36 30" fill="none">
+                      <rect x="1" y="1" width="34" height="26" rx="2" stroke="#ccc" strokeWidth="1.2" />
+                      <circle cx="10" cy="9" r="3.5" stroke="#ccc" strokeWidth="1.2" />
+                      <path d="M1 22 L10 14 L17 20 L24 14 L35 23" stroke="#ccc" strokeWidth="1.2" strokeLinejoin="round" />
+                    </svg>
+                    <span>Image {i + 1}</span>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ============================== QUOTE ============================== */}
       <div className="quote-section">
@@ -170,7 +165,6 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
               const hasDetail1 = !!imgs.detail1;
               const hasDetail2 = !!imgs.detail2;
               const hasAnyImage = hasMain || hasDetail1 || hasDetail2;
-              // Show the detail row only if at least one detail image exists
               const showDetailRow = hasDetail1 || hasDetail2;
 
               return (
@@ -179,7 +173,6 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
                   <td className="c-img">
                     {hasAnyImage ? (
                       <div className="img-cell-wrap">
-                        {/* Main image — only render box if image exists */}
                         {hasMain && (
                           <div className="img-main">
                             <div className="img-box">
@@ -187,7 +180,6 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
                             </div>
                           </div>
                         )}
-                        {/* Detail row — only render if at least one detail exists */}
                         {showDetailRow && (
                           <div className="img-detail-row">
                             {hasDetail1 && (
@@ -207,39 +199,25 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
                           </div>
                         )}
                       </div>
-                    ) : (
-                      /* No images at all — render nothing, column stays but is blank */
-                      null
-                    )}
+                    ) : null}
                   </td>
                   <td>
-                    <div
-                      className="item-name"
-                      dangerouslySetInnerHTML={{ __html: item.name || '' }}
-                    />
+                    <div className="item-name" dangerouslySetInnerHTML={{ __html: item.name || '' }} />
                     {item.sub && (
-                      <div
-                        className="item-sub"
-                        dangerouslySetInnerHTML={{ __html: item.sub }}
-                      />
+                      <div className="item-sub" dangerouslySetInnerHTML={{ __html: item.sub }} />
                     )}
                     <div className="spec-list">
                       {(item.specs || []).map((s, sidx) => (
                         <div key={sidx} className="spec-row">
                           <span className="spec-lbl">{s.label}</span>
-                          <span
-                            className="spec-val"
-                            dangerouslySetInnerHTML={{ __html: s.value || '' }}
-                          />
+                          <span className="spec-val" dangerouslySetInnerHTML={{ __html: s.value || '' }} />
                         </div>
                       ))}
                     </div>
                   </td>
                   <td className="c-price">{euro(item.price)}</td>
                   <td className="c-qty">{item.qty || 1}</td>
-                  <td className="c-total">
-                    <span className="total-val">{euro(lineTotal)}</span>
-                  </td>
+                  <td className="c-total"><span className="total-val">{euro(lineTotal)}</span></td>
                 </tr>
               );
             })}
@@ -282,13 +260,16 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
         <SplitLogo size={250} />
         <div className="back-rule" />
         <div className="back-contact">
-          domberg.es
+          <a href="https://domberg.es" target="_blank" rel="noreferrer">domberg.es</a>
           <br />
-          San Pedro de Alcantara
+          San Pedro de Alcántara
           <br />
-          Marbella, Malaga, Espana
+          Marbella, Málaga, España
+          <br />
+          <a href={`mailto:${meta.contact}`}>{meta.contact}</a>
         </div>
       </div>
+
     </div>
   );
 });
