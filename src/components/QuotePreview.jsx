@@ -56,7 +56,7 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
 
   // Reusable split logo (orange icon top, dark wordmark bottom).
   // Relies on the SVG filter defined in App.jsx and the .logo-split CSS rules.
-  const SplitLogo = ({ size = 128 }) => (
+  const SplitLogo = ({ size = 200 }) => (
     <div className="logo-split" style={{ height: size, width: size }}>
       <img src="/domberg-logo.svg" className="logo-orange-top" alt="" />
       <img
@@ -74,7 +74,7 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
         <div className="cover-body">
           <div className="cover-left">
             <div className="cl-top">
-              <SplitLogo size={128} />
+              <SplitLogo size={200} />
               <div className="cl-rule" />
               <div className="cl-category">{cover.category}</div>
               <div
@@ -315,7 +315,7 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
 
       {/* ============================== BACK ============================== */}
       <div className="page back-page">
-        <SplitLogo size={140} />
+        <SplitLogo size={250} />
         <div className="back-rule" />
         <div className="back-contact">
           domberg.es
