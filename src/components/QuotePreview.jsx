@@ -24,38 +24,7 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
     (i) => i.images && (i.images.main || i.images.detail1 || i.images.detail2)
   );
 
-  // Inline SVG placeholder used in image slots when no upload yet.
-  const ImagePlaceholder = ({ big }) => (
-    <>
-      <svg
-        className="img-placeholder-icon"
-        width={big ? 28 : 20}
-        height={big ? 24 : 18}
-        viewBox="0 0 28 24"
-        fill="none"
-      >
-        <rect
-          x="1"
-          y="1"
-          width="26"
-          height="20"
-          rx="2"
-          stroke="#bbb"
-          strokeWidth="1.2"
-        />
-        <circle cx="8" cy="8" r="3" stroke="#bbb" strokeWidth="1.2" />
-        <path
-          d="M1 18 L8 11 L14 16 L20 12 L27 19"
-          stroke="#bbb"
-          strokeWidth="1.2"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </>
-  );
-
   // Reusable split logo (orange icon top, dark wordmark bottom).
-  // Relies on the SVG filter defined in App.jsx and the .logo-split CSS rules.
   const SplitLogo = ({ size = 200 }) => (
     <div className="logo-split" style={{ height: size, width: size }}>
       <img src="/domberg-logo.svg" className="logo-orange-top" alt="" />
@@ -197,56 +166,51 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
               const num = String(idx + 1).padStart(2, '0');
               const lineTotal = (item.price || 0) * (item.qty || 1);
               const imgs = item.images || {};
+              const hasMain = !!imgs.main;
+              const hasDetail1 = !!imgs.detail1;
+              const hasDetail2 = !!imgs.detail2;
+              const hasAnyImage = hasMain || hasDetail1 || hasDetail2;
+              // Show the detail row only if at least one detail image exists
+              const showDetailRow = hasDetail1 || hasDetail2;
+
               return (
                 <tr key={item.id} className="item-row">
                   <td className="c-num">{num}</td>
                   <td className="c-img">
-                    <div className="img-cell-wrap">
-                      <div className="img-main">
-                        <div className="img-box">
-                          {imgs.main ? (
-                            <img src={imgs.main} alt="" data-loaded />
-                          ) : (
-                            <>
-                              <ImagePlaceholder big />
-                              <div className="img-placeholder-text">
-                                Main image
+                    {hasAnyImage ? (
+                      <div className="img-cell-wrap">
+                        {/* Main image — only render box if image exists */}
+                        {hasMain && (
+                          <div className="img-main">
+                            <div className="img-box">
+                              <img src={imgs.main} alt="" data-loaded />
+                            </div>
+                          </div>
+                        )}
+                        {/* Detail row — only render if at least one detail exists */}
+                        {showDetailRow && (
+                          <div className="img-detail-row">
+                            {hasDetail1 && (
+                              <div className="img-detail">
+                                <div className="img-box">
+                                  <img src={imgs.detail1} alt="" data-loaded />
+                                </div>
                               </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <div className="img-detail-row">
-                        <div className="img-detail">
-                          <div className="img-box">
-                            {imgs.detail1 ? (
-                              <img src={imgs.detail1} alt="" data-loaded />
-                            ) : (
-                              <>
-                                <ImagePlaceholder />
-                                <div className="img-placeholder-text">
-                                  Detail
+                            )}
+                            {hasDetail2 && (
+                              <div className="img-detail">
+                                <div className="img-box">
+                                  <img src={imgs.detail2} alt="" data-loaded />
                                 </div>
-                              </>
+                              </div>
                             )}
                           </div>
-                        </div>
-                        <div className="img-detail">
-                          <div className="img-box">
-                            {imgs.detail2 ? (
-                              <img src={imgs.detail2} alt="" data-loaded />
-                            ) : (
-                              <>
-                                <ImagePlaceholder />
-                                <div className="img-placeholder-text">
-                                  Detail
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                        )}
                       </div>
-                    </div>
+                    ) : (
+                      /* No images at all — render nothing, column stays but is blank */
+                      null
+                    )}
                   </td>
                   <td>
                     <div
