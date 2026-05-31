@@ -210,7 +210,7 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
                       {(item.specs || []).map((s, sidx) => (
                         <div key={sidx} className="spec-row">
                           <span className="spec-lbl">{s.label}</span>
-                          <span className="spec-val" dangerouslySetInnerHTML={{ __html: s.value || '' }} />
+                          <span className="spec-val" dangerouslySetInnerHTML={{ __html: (s.value || '').replace(/\n/g, '<br>') }} />
                         </div>
                       ))}
                     </div>
