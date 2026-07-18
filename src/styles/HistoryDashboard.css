@@ -1,0 +1,134 @@
+.history-dashboard {
+  min-height: 100vh;
+  background: #faf7f2;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e5ddd0;
+}
+
+.history-toolbar .tb-brand {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #2c2c2c;
+  font-size: 13px;
+}
+
+.history-toolbar .tb-sep {
+  width: 1px;
+  height: 20px;
+  background: #e5ddd0;
+}
+
+.history-toolbar .tb-btn {
+  border: 1px solid #d8d0c2;
+  background: #fff;
+  border-radius: 3px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.history-search {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  max-width: 420px;
+}
+
+.history-search input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #d8d0c2;
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+.history-content {
+  flex: 1;
+  padding: 24px;
+}
+
+.history-msg {
+  color: #6b6b6b;
+  font-size: 14px;
+}
+
+.history-error {
+  color: #b3261e;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e5ddd0;
+}
+
+.history-table th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b6b6b;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5ddd0;
+  background: #faf7f2;
+}
+
+.history-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0ebe0;
+  font-size: 14px;
+  color: #2c2c2c;
+}
+
+.history-table tbody tr {
+  cursor: pointer;
+}
+
+.history-table tbody tr:hover {
+  background: #faf7f2;
+}
+
+.history-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: #eee;
+  color: #555;
+}
+
+.history-status--draft {
+  background: #fdecd2;
+  color: #a65c00;
+}
+
+.history-status--sent {
+  background: #dceaf7;
+  color: #1a5c9a;
+}
+
+.history-status--signed {
+  background: #dcf0dc;
+  color: #1a7a3a;
+}
+
+.history-delete {
+  border: none;
+  background: transparent;
+  color: #b3261e;
+  cursor: pointer;
+  font-size: 14px;
+}

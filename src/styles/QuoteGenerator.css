@@ -93,6 +93,27 @@
   white-space: nowrap;
 }
 
+.tb-saved--offline {
+  color: #b3720a;
+}
+
+.status-bar {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 500;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.status-bar--warning {
+  background: #fdecd2;
+  color: #a65c00;
+  border: 1px solid #f0c98a;
+}
+
 .generator-container {
   display: grid;
   grid-template-columns: minmax(380px, 32%) 1fr;

@@ -36,6 +36,19 @@ export const defaultQuoteData = {
 
   vatRate: 21,
 
+  // ── Pricing display & manual override ──────────────────────────────────
+  pricing: {
+    vatEnabled: true, // false = hide VAT breakdown, show one ex-VAT total line
+    manualOverride: false, // true = use the manual figures below instead of auto-calculated
+    manualSubtotal: null,
+    manualIva: null,
+    manualTotal: null,
+    discountEnabled: false,
+    discountLabel: 'Discount',
+    discountType: 'percent', // 'percent' | 'fixed'
+    discountValue: 0,
+  },
+
   // ── About page (toggle on/off per quote) ──────────────────────────────────
   aboutPage: {
     enabled: false,

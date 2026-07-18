@@ -398,6 +398,10 @@
 .tot-row.grand .tot-lbl {
   color: var(--ink);
 }
+.tot-row--discount .tot-lbl,
+.tot-row--discount .tot-val {
+  color: var(--accent);
+}
 
 /* ----------------------- TERMS PAGE ----------------------- */
 .terms-page {
@@ -491,7 +495,8 @@
   .app-header,
   .generator-toolbar,
   .form-panel,
-  .preview-header {
+  .preview-header,
+  .status-bar {
     display: none !important;
   }
   .app,

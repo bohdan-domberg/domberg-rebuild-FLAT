@@ -167,41 +167,62 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
               const hasAnyImage = hasMain || hasDetail1 || hasDetail2;
               const showDetailRow = hasDetail1 || hasDetail2;
 
+              // Size presets — min/max height in mm for the main slot;
+              // detail slots scale proportionally (~roughly half).
+              const sizeRanges = {
+                compact: { main: [20, 36], detail: [10, 18] },
+                standard: { main: [32, 62], detail: [16, 28] },
+                large: { main: [45, 85], detail: [22, 40] },
+              };
+              const preset = sizeRanges[item.imageSize] || sizeRanges.standard;
+              const mainRange = preset.main;
+              const detailRange = preset.detail;
+              const fit = item.imageFit === 'cover' ? 'cover' : 'contain';
+              const mainStyle = {
+                minHeight: `${mainRange[0]}mm`,
+                maxHeight: `${mainRange[1]}mm`,
+              };
+              const detailStyle = {
+                minHeight: `${detailRange[0]}mm`,
+                maxHeight: `${detailRange[1]}mm`,
+              };
+              const imgStyle = { objectFit: fit, padding: fit === 'cover' ? 0 : undefined };
+
               return (
                 <tr key={item.id} className="item-row">
                   <td className="c-num">{num}</td>
-                  <td className="c-img">
-                    {hasAnyImage ? (
+                  {hasAnyImage && (
+                    <td className="c-img">
                       <div className="img-cell-wrap">
                         {hasMain && (
-                          <div className="img-main">
-                            <div className="img-box">
-                              <img src={imgs.main} alt="" data-loaded />
+                          <div className="img-main" style={mainStyle}>
+                            <div className="img-box" style={mainStyle}>
+                              <img src={imgs.main} alt="" style={imgStyle} data-loaded />
                             </div>
                           </div>
                         )}
                         {showDetailRow && (
                           <div className="img-detail-row">
                             {hasDetail1 && (
-                              <div className="img-detail">
-                                <div className="img-box">
-                                  <img src={imgs.detail1} alt="" data-loaded />
+                              <div className="img-detail" style={detailStyle}>
+                                <div className="img-box" style={detailStyle}>
+                                  <img src={imgs.detail1} alt="" style={imgStyle} data-loaded />
                                 </div>
                               </div>
                             )}
                             {hasDetail2 && (
-                              <div className="img-detail">
-                                <div className="img-box">
-                                  <img src={imgs.detail2} alt="" data-loaded />
+                              <div className="img-detail" style={detailStyle}>
+                                <div className="img-box" style={detailStyle}>
+                                  <img src={imgs.detail2} alt="" style={imgStyle} data-loaded />
                                 </div>
                               </div>
                             )}
                           </div>
                         )}
                       </div>
-                    ) : null}
-                  </td>
-                  <td>
+                    </td>
+                  )}
+                  <td colSpan={hasAnyImage ? 1 : 2}>
                     <div className="item-name" dangerouslySetInnerHTML={{ __html: item.name || '' }} />
                     {item.sub && (
                       <div className="item-sub" dangerouslySetInnerHTML={{ __html: item.sub }} />
@@ -226,18 +247,45 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
 
         <div className="totals-wrap">
           <div className="totals-inner">
-            <div className="tot-row">
-              <span className="tot-lbl">Subtotal ex. IVA</span>
-              <span className="tot-val">{euro(totals.subtotal)}</span>
-            </div>
-            <div className="tot-row">
-              <span className="tot-lbl">IVA {vatRate}%</span>
-              <span className="tot-val">{euro(totals.iva)}</span>
-            </div>
-            <div className="tot-row grand">
-              <span className="tot-lbl">Total incl. IVA</span>
-              <span className="tot-val">{euro(totals.total)}</span>
-            </div>
+            {totals.vatEnabled !== false ? (
+              <>
+                <div className="tot-row">
+                  <span className="tot-lbl">Subtotal ex. IVA</span>
+                  <span className="tot-val">{euro(totals.rawSubtotal ?? totals.subtotal)}</span>
+                </div>
+                {totals.discountAmount > 0 && (
+                  <div className="tot-row tot-row--discount">
+                    <span className="tot-lbl">{totals.discountLabel || 'Discount'}</span>
+                    <span className="tot-val">−{euro(totals.discountAmount)}</span>
+                  </div>
+                )}
+                <div className="tot-row">
+                  <span className="tot-lbl">IVA {vatRate}%</span>
+                  <span className="tot-val">{euro(totals.iva)}</span>
+                </div>
+                <div className="tot-row grand">
+                  <span className="tot-lbl">Total incl. IVA</span>
+                  <span className="tot-val">{euro(totals.total)}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="tot-row">
+                  <span className="tot-lbl">Subtotal</span>
+                  <span className="tot-val">{euro(totals.rawSubtotal ?? totals.subtotal)}</span>
+                </div>
+                {totals.discountAmount > 0 && (
+                  <div className="tot-row tot-row--discount">
+                    <span className="tot-lbl">{totals.discountLabel || 'Discount'}</span>
+                    <span className="tot-val">−{euro(totals.discountAmount)}</span>
+                  </div>
+                )}
+                <div className="tot-row grand">
+                  <span className="tot-lbl">Total</span>
+                  <span className="tot-val">{euro(totals.subtotal)}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -69,6 +69,55 @@
   margin-bottom: 10px;
 }
 
+.form-subsection {
+  padding: 12px 0;
+  border-top: 1px dashed #e0dbd5;
+}
+
+.form-subsection:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #2c2c2c;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.checkbox-field input {
+  width: auto;
+  margin: 0;
+}
+
+.field-with-btn {
+  display: flex;
+  gap: 6px;
+}
+
+.field-with-btn input {
+  flex: 1;
+}
+
+.btn-suggest {
+  border: 1px solid #d8d0c2;
+  background: #fff;
+  color: #ea6406;
+  font-size: 11px;
+  padding: 0 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-suggest:hover {
+  border-color: #ea6406;
+}
+
 .form-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -163,6 +212,34 @@
   color: #1c1c1c;
 }
 
+.item-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-move {
+  background: none;
+  border: 1px solid #e0dbd5;
+  color: #6b6b6b;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+
+.btn-move:hover:not(:disabled) {
+  color: #ea6406;
+  border-color: #ea6406;
+}
+
+.btn-move:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 .btn-remove {
   background: none;
   border: 1px solid transparent;
@@ -195,6 +272,27 @@
 .btn-remove-small:hover {
   color: #d94a4a;
   border-color: #d94a4a;
+}
+
+.btn-library-link {
+  display: block;
+  background: none;
+  border: none;
+  color: #ea6406;
+  font-size: 10px;
+  padding: 4px 0 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-align: left;
+}
+
+.image-slot-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.image-slot-actions .btn-remove-small {
+  flex: 1;
 }
 
 /* -------------------- Spec rows -------------------- */
@@ -294,6 +392,22 @@
   text-transform: uppercase;
   color: #1c1c1c;
   margin-bottom: 8px;
+}
+
+.image-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.image-controls select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #d8d0c2;
+  border-radius: 3px;
+  font-size: 12px;
+  background: #fff;
 }
 
 .image-slots {

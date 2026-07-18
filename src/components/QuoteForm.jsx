@@ -1,4 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
+import { compressAndUpload } from '../lib/imageUpload';
+import { getNextQuoteReference } from '../lib/quotesApi';
+import ImageLibraryModal from './ImageLibraryModal';
 import '../styles/QuoteForm.css';
 
 /**
@@ -126,6 +129,11 @@ const RichField = ({ label, hint, value, onChange, rows = 2 }) => {
 
 const QuoteForm = ({ quoteData, onChange }) => {
   const [tab, setTab] = useState('cover');
+  // Tracks which image slots are mid-upload, e.g. { 'item-123-main': true }
+  const [uploading, setUploading] = useState({});
+  // Which slot the library modal should fill when a pick is made, e.g.
+  // { type: 'cover' } or { type: 'item', itemId, slot: 'main' }
+  const [libraryTarget, setLibraryTarget] = useState(null);
 
   // -------------------- Helpers --------------------
   const update = (patch) => onChange({ ...quoteData, ...patch });
@@ -133,15 +141,24 @@ const QuoteForm = ({ quoteData, onChange }) => {
     update({ cover: { ...quoteData.cover, ...patch } });
   const updateMeta = (patch) =>
     update({ meta: { ...quoteData.meta, ...patch } });
+  const updateAboutPage = (patch) =>
+    update({ aboutPage: { ...quoteData.aboutPage, ...patch } });
+  const updatePricing = (patch) =>
+    update({ pricing: { ...quoteData.pricing, ...patch } });
 
-  /** Read a File and return its base64 data URL */
-  const readImage = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = () => reject(new Error('Could not read image'));
-      reader.readAsDataURL(file);
-    });
+  /** Compresses + uploads a file to Supabase Storage, tracking a per-slot spinner. */
+  const uploadImage = async (key, file, bucket, prefix) => {
+    if (!file) return null;
+    setUploading((u) => ({ ...u, [key]: true }));
+    try {
+      return await compressAndUpload(file, bucket, prefix);
+    } catch (err) {
+      window.alert(`Image upload failed: ${err.message}`);
+      return null;
+    } finally {
+      setUploading((u) => ({ ...u, [key]: false }));
+    }
+  };
 
   // -------------------- Item operations --------------------
   const updateItem = (id, patch) =>
@@ -154,6 +171,14 @@ const QuoteForm = ({ quoteData, onChange }) => {
   const removeItem = (id) => {
     if (!window.confirm('Remove this item?')) return;
     update({ items: quoteData.items.filter((it) => it.id !== id) });
+  };
+
+  const moveItem = (idx, direction) => {
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= quoteData.items.length) return;
+    const items = [...quoteData.items];
+    [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
+    update({ items });
   };
 
   const updateSpec = (itemId, idx, field, value) => {
@@ -183,11 +208,12 @@ const QuoteForm = ({ quoteData, onChange }) => {
 
   const handleItemImageUpload = async (itemId, slot, file) => {
     if (!file) return;
-    const dataUrl = await readImage(file);
+    const url = await uploadImage(`item-${itemId}-${slot}`, file, 'quote-images', `item-${itemId}`);
+    if (!url) return;
     const item = quoteData.items.find((i) => i.id === itemId);
     if (!item) return;
     updateItem(itemId, {
-      images: { ...(item.images || {}), [slot]: dataUrl },
+      images: { ...(item.images || {}), [slot]: url },
     });
   };
 
@@ -202,8 +228,43 @@ const QuoteForm = ({ quoteData, onChange }) => {
   // -------------------- Cover image --------------------
   const handleCoverImageUpload = async (file) => {
     if (!file) return;
-    const dataUrl = await readImage(file);
-    updateCover({ coverImage: dataUrl });
+    const url = await uploadImage('cover', file, 'quote-images', 'cover');
+    if (!url) return;
+    updateCover({ coverImage: url });
+  };
+
+  const handleAboutImageUpload = async (idx, file) => {
+    if (!file) return;
+    const url = await uploadImage(`about-${idx}`, file, 'about-images', 'about');
+    if (!url) return;
+    const images = [...(quoteData.aboutPage?.images || [])];
+    images[idx] = url;
+    updateAboutPage({ images });
+  };
+
+  const clearAboutImage = (idx) => {
+    const images = [...(quoteData.aboutPage?.images || [])];
+    images[idx] = null;
+    updateAboutPage({ images });
+  };
+
+  const handleLibrarySelect = (url) => {
+    if (!libraryTarget) return;
+    if (libraryTarget.type === 'cover') {
+      updateCover({ coverImage: url });
+    } else if (libraryTarget.type === 'item') {
+      const item = quoteData.items.find((i) => i.id === libraryTarget.itemId);
+      if (item) {
+        updateItem(libraryTarget.itemId, {
+          images: { ...(item.images || {}), [libraryTarget.slot]: url },
+        });
+      }
+    } else if (libraryTarget.type === 'about') {
+      const images = [...(quoteData.aboutPage?.images || [])];
+      images[libraryTarget.idx] = url;
+      updateAboutPage({ images });
+    }
+    setLibraryTarget(null);
   };
 
   // -------------------- Terms operations --------------------
@@ -231,6 +292,7 @@ const QuoteForm = ({ quoteData, onChange }) => {
   const tabs = [
     { id: 'cover', label: 'Cover' },
     { id: 'items', label: `Items (${quoteData.items.length})` },
+    { id: 'about', label: 'About Page' },
     { id: 'terms', label: `Terms (${quoteData.terms.length})` },
     { id: 'settings', label: 'Settings' },
   ];
@@ -308,8 +370,17 @@ const QuoteForm = ({ quoteData, onChange }) => {
               <input
                 type="file"
                 accept="image/*"
+                disabled={uploading.cover}
                 onChange={(e) => handleCoverImageUpload(e.target.files?.[0])}
               />
+              {uploading.cover && <small className="hint">Uploading…</small>}
+              <button
+                type="button"
+                className="btn-library-link"
+                onClick={() => setLibraryTarget({ type: 'cover' })}
+              >
+                or choose from library
+              </button>
               {quoteData.cover.coverImage && (
                 <div className="image-preview">
                   <img src={quoteData.cover.coverImage} alt="" />
@@ -341,13 +412,25 @@ const QuoteForm = ({ quoteData, onChange }) => {
                   />
                 </Field>
                 <Field label="Reference">
-                  <input
-                    type="text"
-                    value={quoteData.meta.reference}
-                    onChange={(e) =>
-                      updateMeta({ reference: e.target.value })
-                    }
-                  />
+                  <div className="field-with-btn">
+                    <input
+                      type="text"
+                      value={quoteData.meta.reference}
+                      onChange={(e) =>
+                        updateMeta({ reference: e.target.value })
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="btn-suggest"
+                      title="Suggest the next DE26 reference"
+                      onClick={() =>
+                        getNextQuoteReference().then((ref) => updateMeta({ reference: ref }))
+                      }
+                    >
+                      Suggest
+                    </button>
+                  </div>
                 </Field>
                 <Field label="Lead time">
                   <input
@@ -403,13 +486,31 @@ const QuoteForm = ({ quoteData, onChange }) => {
               <div key={item.id} className="item-card">
                 <div className="item-card-header">
                   <h4>Item {String(idx + 1).padStart(2, '0')}</h4>
-                  <button
-                    className="btn-remove"
-                    onClick={() => removeItem(item.id)}
-                    title="Remove item"
-                  >
-                    Remove
-                  </button>
+                  <div className="item-card-header-actions">
+                    <button
+                      className="btn-move"
+                      onClick={() => moveItem(idx, -1)}
+                      disabled={idx === 0}
+                      title="Move up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      className="btn-move"
+                      onClick={() => moveItem(idx, 1)}
+                      disabled={idx === quoteData.items.length - 1}
+                      title="Move down"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      className="btn-remove"
+                      onClick={() => removeItem(item.id)}
+                      title="Remove item"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
 
                 <RichField
@@ -506,33 +607,68 @@ const QuoteForm = ({ quoteData, onChange }) => {
                 {/* ----- Images (3 slots) ----- */}
                 <div className="image-block">
                   <h5>Images</h5>
+
+                  <div className="image-controls">
+                    <Field label="Display size" hint="Try Large for a hero shot, Compact for small details">
+                      <select
+                        value={item.imageSize || 'standard'}
+                        onChange={(e) => updateItem(item.id, { imageSize: e.target.value })}
+                      >
+                        <option value="compact">Compact</option>
+                        <option value="standard">Standard</option>
+                        <option value="large">Large</option>
+                      </select>
+                    </Field>
+                    <Field label="Fit" hint="'Show full image' never crops; 'Fill & crop' fills the box edge-to-edge">
+                      <select
+                        value={item.imageFit || 'contain'}
+                        onChange={(e) => updateItem(item.id, { imageFit: e.target.value })}
+                      >
+                        <option value="contain">Show full image (no crop)</option>
+                        <option value="cover">Fill box &amp; crop</option>
+                      </select>
+                    </Field>
+                  </div>
+
                   <div className="image-slots">
                     <ImageSlot
                       label="Main"
                       hint="CAD / arch drawing"
                       value={item.images?.main}
+                      loading={uploading[`item-${item.id}-main`]}
                       onUpload={(f) =>
                         handleItemImageUpload(item.id, 'main', f)
                       }
                       onClear={() => clearItemImage(item.id, 'main')}
+                      onPickLibrary={() =>
+                        setLibraryTarget({ type: 'item', itemId: item.id, slot: 'main' })
+                      }
                     />
                     <ImageSlot
                       label="Detail 1"
                       hint="Handle / finish"
                       value={item.images?.detail1}
+                      loading={uploading[`item-${item.id}-detail1`]}
                       onUpload={(f) =>
                         handleItemImageUpload(item.id, 'detail1', f)
                       }
                       onClear={() => clearItemImage(item.id, 'detail1')}
+                      onPickLibrary={() =>
+                        setLibraryTarget({ type: 'item', itemId: item.id, slot: 'detail1' })
+                      }
                     />
                     <ImageSlot
                       label="Detail 2"
                       hint="Material / colour"
                       value={item.images?.detail2}
+                      loading={uploading[`item-${item.id}-detail2`]}
                       onUpload={(f) =>
                         handleItemImageUpload(item.id, 'detail2', f)
                       }
                       onClear={() => clearItemImage(item.id, 'detail2')}
+                      onPickLibrary={() =>
+                        setLibraryTarget({ type: 'item', itemId: item.id, slot: 'detail2' })
+                      }
                     />
                   </div>
                 </div>
@@ -542,6 +678,86 @@ const QuoteForm = ({ quoteData, onChange }) => {
         )}
 
         {/* ============================== TERMS ============================== */}
+        {/* ============================== ABOUT PAGE ============================== */}
+        {tab === 'about' && (
+          <div className="tab-content">
+            <h3 className="form-title">About Domberg Page</h3>
+            <p className="hint" style={{ marginTop: -8, marginBottom: 16 }}>
+              Toggle this page on/off from the toolbar button. When on, it's inserted right after the cover page.
+            </p>
+
+            <div className="form-section">
+              <h4>Intro</h4>
+              <Field label="Headline">
+                <input
+                  type="text"
+                  value={quoteData.aboutPage?.headline || ''}
+                  onChange={(e) => updateAboutPage({ headline: e.target.value })}
+                />
+              </Field>
+              <RichField
+                label="Intro paragraph"
+                value={quoteData.aboutPage?.intro || ''}
+                onChange={(v) => updateAboutPage({ intro: v })}
+                rows={4}
+              />
+            </div>
+
+            <div className="form-section">
+              <h4>Text blocks (2×2 grid)</h4>
+              {(quoteData.aboutPage?.blocks || []).map((block, idx) => (
+                <div key={idx} className="form-subsection">
+                  <Field label={`Block ${idx + 1} — title`}>
+                    <input
+                      type="text"
+                      value={block.title}
+                      onChange={(e) => {
+                        const blocks = [...quoteData.aboutPage.blocks];
+                        blocks[idx] = { ...blocks[idx], title: e.target.value };
+                        updateAboutPage({ blocks });
+                      }}
+                    />
+                  </Field>
+                  <RichField
+                    label={`Block ${idx + 1} — body`}
+                    value={block.body}
+                    onChange={(v) => {
+                      const blocks = [...quoteData.aboutPage.blocks];
+                      blocks[idx] = { ...blocks[idx], body: v };
+                      updateAboutPage({ blocks });
+                    }}
+                    rows={3}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="form-section">
+              <h4>Images — right-hand column (2 slots)</h4>
+              <div className="image-slots">
+                <ImageSlot
+                  label="Image 1"
+                  hint="Workshop / craftsmanship shot"
+                  value={quoteData.aboutPage?.images?.[0]}
+                  loading={uploading['about-0']}
+                  onUpload={(f) => handleAboutImageUpload(0, f)}
+                  onClear={() => clearAboutImage(0)}
+                  onPickLibrary={() => setLibraryTarget({ type: 'about', idx: 0 })}
+                />
+                <ImageSlot
+                  label="Image 2"
+                  hint="Installation / finished project"
+                  value={quoteData.aboutPage?.images?.[1]}
+                  loading={uploading['about-1']}
+                  onUpload={(f) => handleAboutImageUpload(1, f)}
+                  onClear={() => clearAboutImage(1)}
+                  onPickLibrary={() => setLibraryTarget({ type: 'about', idx: 1 })}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {tab === 'terms' && (
           <div className="tab-content">
             <h3 className="form-title">
@@ -608,9 +824,141 @@ const QuoteForm = ({ quoteData, onChange }) => {
                 Used for the IVA line on the totals row. Default 21% for Spain.
               </p>
             </div>
+
+            <div className="form-section">
+              <h4>VAT display</h4>
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={quoteData.pricing?.vatEnabled !== false}
+                  onChange={(e) => updatePricing({ vatEnabled: e.target.checked })}
+                />
+                <span>Show VAT breakdown (Subtotal / IVA / Total)</span>
+              </label>
+              <p className="hint">
+                Unchecked: the quote shows a single "Total" line with the price excluding VAT — no breakdown.
+              </p>
+            </div>
+
+            <div className="form-section">
+              <h4>Discount / rounding adjustment</h4>
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={!!quoteData.pricing?.discountEnabled}
+                  onChange={(e) => updatePricing({ discountEnabled: e.target.checked })}
+                />
+                <span>Apply a discount or rounding adjustment before VAT</span>
+              </label>
+              <p className="hint">
+                Subtracted from the item subtotal before VAT is calculated. Ignored while manual override (below) is on.
+              </p>
+
+              {quoteData.pricing?.discountEnabled && (
+                <div className="form-grid-2" style={{ marginTop: 10 }}>
+                  <Field label="Label on the quote">
+                    <input
+                      type="text"
+                      value={quoteData.pricing.discountLabel || ''}
+                      onChange={(e) => updatePricing({ discountLabel: e.target.value })}
+                      placeholder="Discount"
+                    />
+                  </Field>
+                  <Field label="Type">
+                    <select
+                      value={quoteData.pricing.discountType || 'percent'}
+                      onChange={(e) => updatePricing({ discountType: e.target.value })}
+                    >
+                      <option value="percent">Percentage off</option>
+                      <option value="fixed">Fixed amount off</option>
+                    </select>
+                  </Field>
+                  <Field label={quoteData.pricing.discountType === 'fixed' ? 'Amount (€)' : 'Percentage (%)'}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={quoteData.pricing.discountValue ?? ''}
+                      onChange={(e) => updatePricing({ discountValue: e.target.value })}
+                    />
+                  </Field>
+                </div>
+              )}
+            </div>
+
+            <div className="form-section">
+              <h4>Manual price override</h4>
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={!!quoteData.pricing?.manualOverride}
+                  onChange={(e) => {
+                    const enabling = e.target.checked;
+                    if (enabling) {
+                      // Seed the manual fields with the current auto-calculated
+                      // numbers so you're editing from a sane starting point.
+                      const computedSubtotal = quoteData.items.reduce(
+                        (sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 1),
+                        0
+                      );
+                      const computedIva =
+                        (computedSubtotal * (Number(quoteData.vatRate) || 0)) / 100;
+                      const computedTotal = computedSubtotal + computedIva;
+                      updatePricing({
+                        manualOverride: true,
+                        manualSubtotal: computedSubtotal.toFixed(2),
+                        manualIva: computedIva.toFixed(2),
+                        manualTotal: computedTotal.toFixed(2),
+                      });
+                    } else {
+                      updatePricing({ manualOverride: false });
+                    }
+                  }}
+                />
+                <span>Manually set the final Subtotal / VAT / Total</span>
+              </label>
+              <p className="hint">
+                When on, these numbers are used exactly as typed instead of being calculated from the item prices.
+              </p>
+
+              {quoteData.pricing?.manualOverride && (
+                <div className="form-grid-2" style={{ marginTop: 10 }}>
+                  <Field label="Subtotal (ex. VAT)">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={quoteData.pricing.manualSubtotal ?? ''}
+                      onChange={(e) => updatePricing({ manualSubtotal: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="VAT amount">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={quoteData.pricing.manualIva ?? ''}
+                      onChange={(e) => updatePricing({ manualIva: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Total (incl. VAT)">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={quoteData.pricing.manualTotal ?? ''}
+                      onChange={(e) => updatePricing({ manualTotal: e.target.value })}
+                    />
+                  </Field>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
+
+      {libraryTarget && (
+        <ImageLibraryModal
+          onSelect={handleLibrarySelect}
+          onClose={() => setLibraryTarget(null)}
+        />
+      )}
     </div>
   );
 };
@@ -693,17 +1041,26 @@ const SpecValueField = ({ value, onChange }) => {
   );
 };
 
-const ImageSlot = ({ label, hint, value, onUpload, onClear }) => (
+const ImageSlot = ({ label, hint, value, onUpload, onClear, loading, onPickLibrary }) => (
   <div className="image-slot">
     <div className="image-slot-label">{label}</div>
-    {value ? (
+    {loading ? (
+      <small className="hint">Uploading…</small>
+    ) : value ? (
       <>
         <div className="image-slot-preview">
           <img src={value} alt="" />
         </div>
-        <button className="btn-remove-small" onClick={onClear}>
-          Replace
-        </button>
+        <div className="image-slot-actions">
+          <button className="btn-remove-small" onClick={onClear}>
+            Replace
+          </button>
+          {onPickLibrary && (
+            <button className="btn-remove-small" onClick={onPickLibrary}>
+              Library
+            </button>
+          )}
+        </div>
       </>
     ) : (
       <>
@@ -712,6 +1069,11 @@ const ImageSlot = ({ label, hint, value, onUpload, onClear }) => (
           accept="image/*"
           onChange={(e) => onUpload(e.target.files?.[0])}
         />
+        {onPickLibrary && (
+          <button type="button" className="btn-library-link" onClick={onPickLibrary}>
+            or choose from library
+          </button>
+        )}
         <small className="hint">{hint}</small>
       </>
     )}

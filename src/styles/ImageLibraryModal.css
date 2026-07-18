@@ -1,0 +1,188 @@
+.lib-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 28, 28, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.lib-modal {
+  background: #fff;
+  width: 100%;
+  max-width: 640px;
+  max-height: 82vh;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.lib-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5ddd0;
+}
+
+.lib-header h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+  color: #2c2c2c;
+}
+
+.lib-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #6b6b6b;
+  cursor: pointer;
+}
+
+.lib-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #f0ebe0;
+  flex-wrap: wrap;
+}
+
+.lib-tab {
+  border: 1px solid #d8d0c2;
+  background: #fff;
+  border-radius: 12px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #6b6b6b;
+}
+
+.lib-tab.active {
+  background: #ea6406;
+  border-color: #ea6406;
+  color: #fff;
+}
+
+.lib-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  align-content: start;
+}
+
+.lib-msg {
+  grid-column: 1 / -1;
+  color: #6b6b6b;
+  font-size: 13px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.lib-error {
+  color: #b3261e;
+}
+
+.lib-item {
+  position: relative;
+  cursor: pointer;
+  border: 1px solid #e5ddd0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #faf7f2;
+  transition: border-color 0.15s;
+}
+
+.lib-item:hover {
+  border-color: #ea6406;
+}
+
+.lib-item img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  display: block;
+}
+
+.lib-item-label {
+  font-size: 11px;
+  padding: 4px 6px;
+  color: #2c2c2c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lib-item-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  color: #b3261e;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.lib-upload {
+  border-top: 1px solid #e5ddd0;
+  padding: 14px 20px 18px;
+  background: #faf7f2;
+}
+
+.lib-upload h4 {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #ea6406;
+  margin: 0 0 8px;
+}
+
+.lib-upload-row {
+  display: flex;
+  gap: 8px;
+}
+
+.lib-upload-row input[type='text'] {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #d8d0c2;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.lib-upload-row select {
+  padding: 6px 8px;
+  border: 1px solid #d8d0c2;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.lib-upload-btn {
+  background: #ea6406;
+  color: #fff;
+  border-radius: 3px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+.lib-hint {
+  font-size: 11px;
+  color: #9a9490;
+  margin: 8px 0 0;
+}
