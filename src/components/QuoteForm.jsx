@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { compressAndUpload } from '../lib/imageUpload';
 import { getNextQuoteReference } from '../lib/quotesApi';
 import ImageLibraryModal from './ImageLibraryModal';
@@ -17,7 +17,7 @@ import '../styles/QuoteForm.css';
 // Wraps a textarea with a B / I / U toolbar.
 // When text is selected, it wraps the selection in the tag.
 // When nothing is selected, it inserts the tag pair with cursor inside.
-const RichField = ({ label, hint, value, onChange, rows = 2 }) => {
+const RichField = ({ label, hint, value, onChange, rows = 2, fieldRef }) => {
   const textareaRef = useRef(null);
 
   const applyTag = useCallback(
@@ -116,7 +116,10 @@ const RichField = ({ label, hint, value, onChange, rows = 2 }) => {
         </button>
       </div>
       <textarea
-        ref={textareaRef}
+        ref={(el) => {
+          textareaRef.current = el;
+          if (fieldRef) fieldRef(el);
+        }}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -127,13 +130,32 @@ const RichField = ({ label, hint, value, onChange, rows = 2 }) => {
   );
 };
 
-const QuoteForm = ({ quoteData, onChange }) => {
+const QuoteForm = forwardRef(({ quoteData, onChange }, ref) => {
   const [tab, setTab] = useState('cover');
   // Tracks which image slots are mid-upload, e.g. { 'item-123-main': true }
   const [uploading, setUploading] = useState({});
   // Which slot the library modal should fill when a pick is made, e.g.
   // { type: 'cover' } or { type: 'item', itemId, slot: 'main' }
   const [libraryTarget, setLibraryTarget] = useState(null);
+  // Collapsed item cards (compact summary row instead of the full form) —
+  // manual toggle only, never set for a freshly added/duplicated item.
+  const [collapsedIds, setCollapsedIds] = useState(() => new Set());
+  // { id, token } — scrolls/focuses an item card. token (not just id) makes
+  // repeat-jumps to the same item re-trigger the effect below.
+  const [focusTarget, setFocusTarget] = useState(null);
+  const itemRefs = useRef({}); // item.id -> .item-card DOM node
+  const nameFieldRefs = useRef({}); // item.id -> Name textarea DOM node
+
+  // Smooth-scrolls + focuses an item card whenever focusTarget changes.
+  // preventScroll on the focus call stops the browser's native focus-scroll
+  // from fighting the smooth scrollIntoView animation.
+  useEffect(() => {
+    if (!focusTarget) return;
+    const cardEl = itemRefs.current[focusTarget.id];
+    if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const nameEl = nameFieldRefs.current[focusTarget.id];
+    if (nameEl) nameEl.focus({ preventScroll: true });
+  }, [focusTarget]);
 
   // -------------------- Helpers --------------------
   const update = (patch) => onChange({ ...quoteData, ...patch });
@@ -180,6 +202,73 @@ const QuoteForm = ({ quoteData, onChange }) => {
     [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
     update({ items });
   };
+
+  const stripTags = (html) => (html || '').replace(/<[^>]*>/g, '');
+
+  const toggleCollapsed = (id) =>
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const collapseAll = () => setCollapsedIds(new Set(quoteData.items.map((i) => i.id)));
+  const expandAll = () => setCollapsedIds(new Set());
+
+  /** Switches to the items tab, expands the target item if collapsed, and
+   * scrolls/focuses it (see the useEffect above watching focusTarget). */
+  const requestFocus = (id) => {
+    setTab('items');
+    setCollapsedIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setFocusTarget({ id, token: Date.now() + Math.random() });
+  };
+
+  const addItem = () => {
+    const newItem = {
+      id: Date.now(),
+      name: 'New Item',
+      sub: '',
+      specs: [
+        { label: 'Dimensions', value: '' },
+        { label: 'Materials', value: '' },
+        { label: 'Hardware', value: '' },
+      ],
+      price: 0,
+      qty: 1,
+      images: { main: null, detail1: null, detail2: null },
+    };
+    update({ items: [...quoteData.items, newItem] });
+    requestFocus(newItem.id);
+  };
+
+  /** Clones name/sub/specs/price/qty (and display prefs) — not photos —
+   * into a new item inserted right after the original. */
+  const duplicateItem = (idx) => {
+    const original = quoteData.items[idx];
+    const clone = {
+      id: Date.now(),
+      name: original.name,
+      sub: original.sub,
+      specs: original.specs.map((s) => ({ ...s })),
+      price: original.price,
+      qty: original.qty,
+      imageSize: original.imageSize,
+      imageFit: original.imageFit,
+      images: { main: null, detail1: null, detail2: null },
+    };
+    const items = [...quoteData.items];
+    items.splice(idx + 1, 0, clone);
+    update({ items });
+    requestFocus(clone.id);
+  };
+
+  useImperativeHandle(ref, () => ({ addItem, jumpToItem: requestFocus }), [quoteData]);
 
   const updateSpec = (itemId, idx, field, value) => {
     const item = quoteData.items.find((i) => i.id === itemId);
@@ -476,16 +565,65 @@ const QuoteForm = ({ quoteData, onChange }) => {
           <div className="tab-content">
             <h3 className="form-title">Schedule Items</h3>
 
+            <div className="items-toolbar">
+              <select
+                className="items-toolbar-jump"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) requestFocus(Number(e.target.value));
+                }}
+              >
+                <option value="">Jump to item…</option>
+                {quoteData.items.map((it, i) => (
+                  <option key={it.id} value={it.id}>
+                    {String(i + 1).padStart(2, '0')} — {stripTags(it.name) || 'New Item'}
+                  </option>
+                ))}
+              </select>
+              <div className="items-toolbar-actions">
+                <button type="button" className="btn-move" onClick={addItem}>
+                  + Add item
+                </button>
+                <button type="button" className="btn-move" onClick={collapseAll}>
+                  Collapse all
+                </button>
+                <button type="button" className="btn-move" onClick={expandAll}>
+                  Expand all
+                </button>
+              </div>
+            </div>
+
             {quoteData.items.length === 0 && (
               <div className="empty-hint">
-                No items yet. Use the "+ Item" button in the toolbar.
+                No items yet. Use the "+ Add item" button above.
               </div>
             )}
 
-            {quoteData.items.map((item, idx) => (
-              <div key={item.id} className="item-card">
+            {quoteData.items.map((item, idx) => {
+              const isCollapsed = collapsedIds.has(item.id);
+              return (
+              <div
+                key={item.id}
+                className={`item-card${isCollapsed ? ' item-card--collapsed' : ''}`}
+                ref={(el) => {
+                  if (el) itemRefs.current[item.id] = el;
+                  else delete itemRefs.current[item.id];
+                }}
+              >
                 <div className="item-card-header">
-                  <h4>Item {String(idx + 1).padStart(2, '0')}</h4>
+                  <button
+                    type="button"
+                    className="btn-move item-card-collapse-toggle"
+                    onClick={() => toggleCollapsed(item.id)}
+                    title={isCollapsed ? 'Expand' : 'Collapse'}
+                  >
+                    {isCollapsed ? '▸' : '▾'}
+                  </button>
+                  <h4>
+                    {isCollapsed
+                      ? `${String(idx + 1).padStart(2, '0')} — ${stripTags(item.name) || 'New Item'} — €${(item.price || 0).toLocaleString('en-GB', { minimumFractionDigits: 2 })} × ${item.qty || 1}`
+                      : `Item ${String(idx + 1).padStart(2, '0')}`}
+                  </h4>
                   <div className="item-card-header-actions">
                     <button
                       className="btn-move"
@@ -504,6 +642,13 @@ const QuoteForm = ({ quoteData, onChange }) => {
                       ↓
                     </button>
                     <button
+                      className="btn-move"
+                      onClick={() => duplicateItem(idx)}
+                      title="Duplicate item"
+                    >
+                      ⧉ Duplicate
+                    </button>
+                    <button
                       className="btn-remove"
                       onClick={() => removeItem(item.id)}
                       title="Remove item"
@@ -513,10 +658,13 @@ const QuoteForm = ({ quoteData, onChange }) => {
                   </div>
                 </div>
 
+                {!isCollapsed && (
+                <>
                 <RichField
                   label="Name"
                   value={item.name || ''}
                   onChange={(v) => updateItem(item.id, { name: v })}
+                  fieldRef={(el) => { nameFieldRefs.current[item.id] = el; }}
                 />
                 <RichField
                   label="Subtitle / category"
@@ -672,8 +820,15 @@ const QuoteForm = ({ quoteData, onChange }) => {
                     />
                   </div>
                 </div>
+                </>
+                )}
               </div>
-            ))}
+              );
+            })}
+
+            <button type="button" className="btn-add-block" onClick={addItem}>
+              + Add item
+            </button>
           </div>
         )}
 
@@ -961,7 +1116,9 @@ const QuoteForm = ({ quoteData, onChange }) => {
       )}
     </div>
   );
-};
+});
+
+QuoteForm.displayName = 'QuoteForm';
 
 // --- Plain Field (no toolbar) ---
 const Field = ({ label, hint, children }) => (

@@ -39,6 +39,7 @@ const QuoteGenerator = () => {
   const [showNewModal, setShowNewModal] = useState(false);
   const fileInputRef = useRef(null);
   const extractorFileInputRef = useRef(null);
+  const formRef = useRef(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const hasLoadedFromUrl = useRef(false);
@@ -93,6 +94,15 @@ const QuoteGenerator = () => {
         setSavedAt(new Date());
       } catch (e) {
         // ignore
+      }
+
+      // Don't create a cloud row for a quote nobody has actually touched yet
+      // (e.g. just opening the app) — only the very first insert is gated;
+      // once a quoteId exists, every change saves normally as before.
+      const meaningful = !!quoteId || isDraftMeaningful(type, quoteData, getDefaultQuoteData(type));
+      if (!meaningful) {
+        setCloudStatus('idle');
+        return;
       }
 
       setCloudStatus('saving');
@@ -254,23 +264,6 @@ const QuoteGenerator = () => {
     });
   };
 
-  const handleAddItem = () => {
-    const newItem = {
-      id: Date.now(),
-      name: 'New Item',
-      sub: '',
-      specs: [
-        { label: 'Dimensions', value: '' },
-        { label: 'Materials', value: '' },
-        { label: 'Hardware', value: '' },
-      ],
-      price: 0,
-      qty: 1,
-      images: { main: null, detail1: null, detail2: null },
-    };
-    setQuoteData({ ...quoteData, items: [...quoteData.items, newItem] });
-  };
-
   const handleAddApplianceItem = () => {
     const newItem = { id: Date.now(), matNo: '', desc: '', link: '', qty: 1, listPrice: 0 };
     setQuoteData({ ...quoteData, items: [...quoteData.items, newItem] });
@@ -291,20 +284,26 @@ const QuoteGenerator = () => {
   // -------------------- Missing-info check (persistent bottom-left status) --------------------
   const warnings = [];
   if (type === 'standard') {
-    const itemsMissingPrice = quoteData.items.filter((i) => !Number(i.price)).length;
-    const itemsMissingImages = quoteData.items.filter(
+    const missingPrice = quoteData.items.filter((i) => !Number(i.price));
+    const missingImages = quoteData.items.filter(
       (i) => !i.images || (!i.images.main && !i.images.detail1 && !i.images.detail2)
-    ).length;
-    if (itemsMissingPrice > 0) {
-      warnings.push(`${itemsMissingPrice} item${itemsMissingPrice === 1 ? '' : 's'} missing price`);
+    );
+    if (missingPrice.length > 0) {
+      warnings.push({
+        text: `${missingPrice.length} item${missingPrice.length === 1 ? '' : 's'} missing price`,
+        onClick: () => formRef.current?.jumpToItem(missingPrice[0].id),
+      });
     }
-    if (itemsMissingImages > 0) {
-      warnings.push(`${itemsMissingImages} item${itemsMissingImages === 1 ? '' : 's'} missing photos`);
+    if (missingImages.length > 0) {
+      warnings.push({
+        text: `${missingImages.length} item${missingImages.length === 1 ? '' : 's'} missing photos`,
+        onClick: () => formRef.current?.jumpToItem(missingImages[0].id),
+      });
     }
   } else if (type === 'appliance') {
     const itemsMissingPrice = quoteData.items.filter((i) => !Number(i.listPrice)).length;
     if (itemsMissingPrice > 0) {
-      warnings.push(`${itemsMissingPrice} item${itemsMissingPrice === 1 ? '' : 's'} missing price`);
+      warnings.push({ text: `${itemsMissingPrice} item${itemsMissingPrice === 1 ? '' : 's'} missing price` });
     }
   }
 
@@ -322,7 +321,7 @@ const QuoteGenerator = () => {
         </button>
 
         {type === 'standard' && (
-          <button className="tb-btn" onClick={handleAddItem} title="Add an item to the schedule">
+          <button className="tb-btn" onClick={() => formRef.current?.addItem()} title="Add an item to the schedule">
             + Item
           </button>
         )}
@@ -419,7 +418,13 @@ const QuoteGenerator = () => {
 
       <div className="generator-container">
         <div className="form-panel">
-          <FormComponent quoteData={quoteData} onChange={setQuoteData} totals={totals} variant={type} />
+          <FormComponent
+            ref={type === 'standard' ? formRef : undefined}
+            quoteData={quoteData}
+            onChange={setQuoteData}
+            totals={totals}
+            variant={type}
+          />
         </div>
 
         <div className="preview-panel">
@@ -435,7 +440,19 @@ const QuoteGenerator = () => {
 
       {warnings.length > 0 && (
         <div className="status-bar status-bar--warning">
-          ⚠ {warnings.join(' · ')}
+          ⚠{' '}
+          {warnings.map((w, i) => (
+            <span key={i}>
+              {i > 0 && ' · '}
+              {w.onClick ? (
+                <button type="button" className="status-bar-link" onClick={w.onClick}>
+                  {w.text}
+                </button>
+              ) : (
+                w.text
+              )}
+            </span>
+          ))}
         </div>
       )}
 
