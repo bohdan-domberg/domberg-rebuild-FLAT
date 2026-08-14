@@ -11,6 +11,8 @@
  *   aboutPage  — optional brand page: { enabled, headline, blocks[], images[] }
  */
 export const defaultQuoteData = {
+  quote_type: 'standard',
+
   cover: {
     category: 'Commercial Proposal — Bespoke Joinery & Interiors',
     projectName: 'Project Name',

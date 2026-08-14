@@ -125,6 +125,36 @@
   color: #1a7a3a;
 }
 
+.history-type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  background: #eee;
+  color: #555;
+}
+
+.history-type-badge--standard {
+  background: #ece7f7;
+  color: #4a3a8a;
+}
+
+.history-type-badge--appliance {
+  background: #fde7dc;
+  color: #b8460f;
+}
+
+.history-type-badge--flooring {
+  background: #f2e7d8;
+  color: #8a5a1e;
+}
+
+.history-type-badge--windows {
+  background: #dcecf5;
+  color: #1a6a9a;
+}
+
 .history-delete {
   border: none;
   background: transparent;

@@ -468,12 +468,10 @@
 
 /* ============================================================
    PRINT — A4 LANDSCAPE, FULL BLEED
+   The @page size itself is injected dynamically by QuoteGenerator.jsx
+   (per quote_type — Standard prints landscape, the newer cost-summary/
+   appliance formats print portrait) so it isn't declared statically here.
    ============================================================ */
-@page {
-  size: A4 landscape;
-  margin: 0;
-}
-
 @media print {
   *,
   *::before,
@@ -509,7 +507,6 @@
     padding: 0 !important;
     margin: 0 !important;
     background: white !important;
-    width: 297mm !important;
     overflow: visible !important;
   }
 

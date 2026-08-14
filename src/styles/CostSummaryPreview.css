@@ -1,0 +1,244 @@
+/* CostSummaryPreview — shared print preview for Flooring & Windows quotes.
+   Two pages: a full-bleed cover photo, then a plain summary-table page.
+   Screen rules first, @media print rules at the bottom. */
+
+.cost-summary-preview {
+  --accent: #ea6406;
+  --ink: #1c1c1c;
+  --cream: #faf7f2;
+  --muted: #9a9490;
+  --border: #ccc;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+
+  font-family: var(--sans);
+  color: var(--ink);
+  font-size: 9pt;
+  background: #d8d4cf;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ============================== COVER ============================== */
+.cs-cover {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  background: #cfcbc4;
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.cs-cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cs-cover-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #999;
+  font-size: 9pt;
+}
+
+.cs-cover-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 50%;
+  background: rgba(250, 247, 242, 0.9);
+  border-left: 4px solid var(--accent);
+  padding: 16mm 8mm 14mm 12mm;
+  display: flex;
+  flex-direction: column;
+}
+
+.cs-cover-body {
+  margin-top: 16mm;
+}
+
+.cs-cover-eyebrow {
+  font-size: 8pt;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.cs-cover-rule {
+  width: 26px;
+  height: 2px;
+  background: var(--accent);
+  margin: 5mm 0;
+}
+
+.cs-cover-title {
+  font-family: var(--serif);
+  font-size: 36pt;
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1.08;
+}
+
+.cs-cover-bottom {
+  margin-top: auto;
+  padding-top: 6mm;
+  border-top: 0.5px solid rgba(28, 28, 28, 0.15);
+}
+
+.cs-cover-client {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12pt;
+  color: var(--ink);
+  margin-bottom: 3mm;
+}
+
+.cs-cover-url {
+  font-size: 8pt;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  text-decoration: underline;
+}
+
+/* ============================== SUMMARY ============================== */
+.cs-page {
+  width: 210mm;
+  min-height: 297mm;
+  background: #fff;
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.15);
+  padding: 20mm 16mm;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.cs-summary-title {
+  text-align: center;
+  font-size: 13pt;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 10mm;
+}
+
+.cs-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 6mm;
+}
+
+.cs-table th,
+.cs-table td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 9.5pt;
+}
+
+.cs-table th {
+  background: #f0efec;
+  font-style: italic;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.cs-table td.bold {
+  font-weight: 600;
+}
+
+.cs-table .tl {
+  text-align: left;
+}
+
+.cs-material-line {
+  font-style: italic;
+  font-weight: 600;
+  margin-bottom: 8mm;
+}
+
+.cs-copy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10mm;
+  margin-bottom: 8mm;
+}
+
+.cs-copy-col h4,
+.cs-areas h4 {
+  font-size: 9.5pt;
+  font-style: italic;
+  font-weight: 600;
+  text-decoration: underline;
+  margin-bottom: 3mm;
+}
+
+.cs-copy-col ul,
+.cs-areas ul {
+  padding-left: 16px;
+  font-size: 9.5pt;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.cs-areas {
+  margin-bottom: 8mm;
+}
+
+.cs-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6mm;
+  padding-top: 12mm;
+  border-top: 1px solid var(--border);
+}
+
+.cs-footer-contact {
+  font-size: 8pt;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.8;
+  letter-spacing: 0.5px;
+}
+
+.cs-footer-contact a {
+  color: var(--muted);
+}
+
+/* ── PRINT ── */
+@media print {
+  .cost-summary-preview {
+    background: white !important;
+    padding: 0 !important;
+    gap: 0;
+    display: block;
+  }
+  .cost-summary-preview .cs-cover,
+  .cost-summary-preview .cs-page {
+    width: 210mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+  .cost-summary-preview .cs-cover {
+    height: 297mm !important;
+    page-break-after: always;
+  }
+  .cost-summary-preview .cs-page {
+    min-height: 0;
+  }
+}

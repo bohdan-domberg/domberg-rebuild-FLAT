@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listQuotes, deleteQuote } from '../lib/quotesApi';
+import { QUOTE_TYPES } from '../lib/quoteTypes';
 import '../styles/HistoryDashboard.css';
 
 const statusLabel = {
@@ -8,6 +9,17 @@ const statusLabel = {
   sent: 'Sent',
   signed: 'Signed',
 };
+
+const typeLabel = Object.fromEntries(QUOTE_TYPES.map((t) => [t.id, t.label]));
+
+/** Standard quotes keep their data under `cover`; the newer types under `client`. */
+function getRowDisplay(q) {
+  const type = q.quote_type || q.data?.quote_type || 'standard';
+  const d = q.data || {};
+  return type === 'standard'
+    ? { type, project: d.cover?.projectName, client: d.cover?.clientLine1 }
+    : { type, project: d.client?.project, client: d.client?.name };
+}
 
 const HistoryDashboard = () => {
   const [quotes, setQuotes] = useState([]);
@@ -83,6 +95,7 @@ const HistoryDashboard = () => {
           <table className="history-table">
             <thead>
               <tr>
+                <th>Type</th>
                 <th>Project</th>
                 <th>Client</th>
                 <th>Reference</th>
@@ -92,28 +105,36 @@ const HistoryDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {quotes.map((q) => (
-                <tr key={q.id} onClick={() => navigate(`/?quote=${q.id}`)}>
-                  <td>{q.data?.cover?.projectName || '—'}</td>
-                  <td>{q.data?.cover?.clientLine1 || '—'}</td>
-                  <td>{q.quote_code || q.data?.meta?.reference || '—'}</td>
-                  <td>
-                    <span className={`history-status history-status--${q.status}`}>
-                      {statusLabel[q.status] || q.status}
-                    </span>
-                  </td>
-                  <td>{new Date(q.updated_at).toLocaleString('en-GB')}</td>
-                  <td>
-                    <button
-                      className="history-delete"
-                      onClick={(e) => handleDelete(q.id, e)}
-                      title="Delete quote"
-                    >
-                      ✕
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {quotes.map((q) => {
+                const row = getRowDisplay(q);
+                return (
+                  <tr key={q.id} onClick={() => navigate(`/?quote=${q.id}`)}>
+                    <td>
+                      <span className={`history-type-badge history-type-badge--${row.type}`}>
+                        {typeLabel[row.type] || row.type}
+                      </span>
+                    </td>
+                    <td>{row.project || '—'}</td>
+                    <td>{row.client || '—'}</td>
+                    <td>{q.quote_code || q.data?.meta?.reference || q.data?.meta?.quoteNo || '—'}</td>
+                    <td>
+                      <span className={`history-status history-status--${q.status}`}>
+                        {statusLabel[q.status] || q.status}
+                      </span>
+                    </td>
+                    <td>{new Date(q.updated_at).toLocaleString('en-GB')}</td>
+                    <td>
+                      <button
+                        className="history-delete"
+                        onClick={(e) => handleDelete(q.id, e)}
+                        title="Delete quote"
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -10,12 +10,13 @@ import { supabase } from './supabaseClient';
 export async function listQuotes({ search = '', limit = 100 } = {}) {
   let query = supabase
     .from('quotes')
-    .select('id, quote_code, status, created_at, updated_at, data')
+    .select('id, quote_code, status, quote_type, created_at, updated_at, data')
     .order('updated_at', { ascending: false })
     .limit(limit);
 
   if (search.trim()) {
     // Search across quote_code and inside the jsonb cover/meta blocks
+    // (Standard) or client blocks (Appliance/Flooring/Windows).
     const term = search.trim();
     query = query.or(
       [
@@ -23,6 +24,8 @@ export async function listQuotes({ search = '', limit = 100 } = {}) {
         `data->cover->>projectName.ilike.%${term}%`,
         `data->cover->>clientLine1.ilike.%${term}%`,
         `data->meta->>reference.ilike.%${term}%`,
+        `data->client->>name.ilike.%${term}%`,
+        `data->client->>project.ilike.%${term}%`,
       ].join(',')
     );
   }
@@ -35,7 +38,7 @@ export async function listQuotes({ search = '', limit = 100 } = {}) {
 export async function loadQuote(id) {
   const { data, error } = await supabase
     .from('quotes')
-    .select('id, quote_code, status, data, created_at, updated_at')
+    .select('id, quote_code, status, quote_type, data, created_at, updated_at')
     .eq('id', id)
     .single();
   if (error) throw new Error(`Could not load quote: ${error.message}`);
@@ -47,7 +50,8 @@ export async function loadQuote(id) {
  * a new row (returns the new id so the caller can remember it).
  */
 export async function saveQuote({ id, quoteData, status = 'draft' }) {
-  const quoteCode = quoteData?.meta?.reference || null;
+  const quoteCode = quoteData?.meta?.reference || quoteData?.meta?.quoteNo || null;
+  const quoteType = quoteData?.quote_type || 'standard';
 
   if (id) {
     const { error } = await supabase
@@ -55,6 +59,7 @@ export async function saveQuote({ id, quoteData, status = 'draft' }) {
       .update({
         data: quoteData,
         quote_code: quoteCode,
+        quote_type: quoteType,
         status,
         updated_at: new Date().toISOString(),
       })
@@ -65,7 +70,7 @@ export async function saveQuote({ id, quoteData, status = 'draft' }) {
 
   const { data, error } = await supabase
     .from('quotes')
-    .insert({ data: quoteData, quote_code: quoteCode, status })
+    .insert({ data: quoteData, quote_code: quoteCode, quote_type: quoteType, status })
     .select('id')
     .single();
   if (error) throw new Error(`Save failed: ${error.message}`);

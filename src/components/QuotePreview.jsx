@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import SplitLogo from './SplitLogo';
 import '../styles/QuotePreview.css';
 
 const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
@@ -12,13 +13,6 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
   const { cover, meta, items, vatRate, terms, aboutPage } = quoteData;
   const hasImages = items.some(
     (i) => i.images && (i.images.main || i.images.detail1 || i.images.detail2)
-  );
-
-  const SplitLogo = ({ size = 200 }) => (
-    <div className="logo-split" style={{ height: size, width: size }}>
-      <img src="/domberg-logo.svg" className="logo-orange-top" alt="" />
-      <img src="/domberg-logo.svg" className="logo-dark-bottom" alt="Domberg" />
-    </div>
   );
 
   return (

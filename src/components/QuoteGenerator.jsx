@@ -2,10 +2,33 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import QuoteForm from './QuoteForm';
 import QuotePreview from './QuotePreview';
+import ApplianceForm from './ApplianceForm';
+import AppliancePreview from './AppliancePreview';
+import CostSummaryForm from './CostSummaryForm';
+import CostSummaryPreview from './CostSummaryPreview';
+import NewQuoteModal from './NewQuoteModal';
 import { defaultQuoteData } from '../lib/defaultQuote';
+import { getDefaultQuoteData, mergeQuoteData, isDraftMeaningful, getDisplayName } from '../lib/quoteTypes';
+import { computeTotals } from '../lib/quoteTotals';
 import { supabase } from '../lib/supabaseClient';
 import { saveQuote, loadQuote, getNextQuoteReference } from '../lib/quotesApi';
 import '../styles/QuoteGenerator.css';
+
+// Form/Preview components keyed by quote_type. Flooring and Windows share
+// the same "cost summary" pair, distinguished at render time by a
+// `variant` prop.
+const FORM_BY_TYPE = {
+  standard: QuoteForm,
+  appliance: ApplianceForm,
+  flooring: CostSummaryForm,
+  windows: CostSummaryForm,
+};
+const PREVIEW_BY_TYPE = {
+  standard: QuotePreview,
+  appliance: AppliancePreview,
+  flooring: CostSummaryPreview,
+  windows: CostSummaryPreview,
+};
 
 const QuoteGenerator = () => {
   const [quoteData, setQuoteData] = useState(defaultQuoteData);
@@ -13,11 +36,14 @@ const QuoteGenerator = () => {
   const [quoteId, setQuoteId] = useState(null);
   const [cloudStatus, setCloudStatus] = useState('idle'); // idle | saving | saved | offline | error
   const [loadingCloud, setLoadingCloud] = useState(false);
+  const [showNewModal, setShowNewModal] = useState(false);
   const fileInputRef = useRef(null);
   const extractorFileInputRef = useRef(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const hasLoadedFromUrl = useRef(false);
+
+  const type = quoteData.quote_type || 'standard';
 
   // -------------------- Load a specific quote from the cloud (?quote=id) --------------------
   useEffect(() => {
@@ -27,14 +53,8 @@ const QuoteGenerator = () => {
     setLoadingCloud(true);
     loadQuote(idFromUrl)
       .then((row) => {
-        setQuoteData({
-          ...defaultQuoteData,
-          ...row.data,
-          aboutPage: { ...defaultQuoteData.aboutPage, ...(row.data?.aboutPage || {}) },
-          pricing: { ...defaultQuoteData.pricing, ...(row.data?.pricing || {}) },
-          cover: { ...defaultQuoteData.cover, ...(row.data?.cover || {}) },
-          meta: { ...defaultQuoteData.meta, ...(row.data?.meta || {}) },
-        });
+        const loadedType = row.quote_type || row.data?.quote_type || 'standard';
+        setQuoteData(mergeQuoteData(loadedType, row.data));
         setQuoteId(row.id);
       })
       .catch((err) => window.alert(`Could not load that quote: ${err.message}`))
@@ -42,42 +62,23 @@ const QuoteGenerator = () => {
   }, [searchParams]);
 
   // -------------------- Totals --------------------
-  const rawSubtotal = quoteData.items.reduce(
-    (sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 1),
-    0
-  );
+  const totals = computeTotals(quoteData);
 
-  const pricing = quoteData.pricing || defaultQuoteData.pricing;
-  const discountAmount = pricing.discountEnabled
-    ? pricing.discountType === 'percent'
-      ? (rawSubtotal * (Number(pricing.discountValue) || 0)) / 100
-      : Number(pricing.discountValue) || 0
-    : 0;
-  const computedSubtotal = Math.max(0, rawSubtotal - discountAmount);
-  const computedIva = computedSubtotal * (Number(quoteData.vatRate) || 0) / 100;
-  const computedTotal = computedSubtotal + computedIva;
-
-  const subtotal =
-    pricing.manualOverride && pricing.manualSubtotal !== null && pricing.manualSubtotal !== ''
-      ? Number(pricing.manualSubtotal)
-      : computedSubtotal;
-  const iva =
-    pricing.manualOverride && pricing.manualIva !== null && pricing.manualIva !== ''
-      ? Number(pricing.manualIva)
-      : computedIva;
-  const total =
-    pricing.manualOverride && pricing.manualTotal !== null && pricing.manualTotal !== ''
-      ? Number(pricing.manualTotal)
-      : computedTotal;
-  const totals = {
-    rawSubtotal,
-    discountAmount: pricing.manualOverride ? 0 : discountAmount,
-    discountLabel: pricing.discountLabel || 'Discount',
-    subtotal,
-    iva,
-    total,
-    vatEnabled: pricing.vatEnabled !== false,
-  };
+  // -------------------- Print page size --------------------
+  // Standard prints A4 landscape (full itemised schedule); the newer
+  // appliance/cost-summary formats print portrait, matching their source
+  // documents. @page can't be scoped by class, so this injects/updates one
+  // shared <style> tag rather than relying on a static rule in the CSS.
+  useEffect(() => {
+    let styleEl = document.getElementById('dynamic-page-size');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'dynamic-page-size';
+      document.head.appendChild(styleEl);
+    }
+    const size = type === 'standard' ? 'A4 landscape' : 'A4';
+    styleEl.textContent = `@page { size: ${size}; margin: 0; }`;
+  }, [type]);
 
   // -------------------- Autosave --------------------
   // Always writes to localStorage immediately (instant, never blocked by network),
@@ -115,23 +116,13 @@ const QuoteGenerator = () => {
     if (!raw) return;
     try {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.items && parsed.cover) {
-        if (
-          parsed.cover.projectName !== defaultQuoteData.cover.projectName ||
-          parsed.items.length !== defaultQuoteData.items.length
-        ) {
-          if (window.confirm('Restore your last unsaved draft?')) {
-            setQuoteData({
-              ...defaultQuoteData,
-              ...parsed,
-              aboutPage: { ...defaultQuoteData.aboutPage, ...(parsed.aboutPage || {}) },
-              pricing: { ...defaultQuoteData.pricing, ...(parsed.pricing || {}) },
-              cover: { ...defaultQuoteData.cover, ...(parsed.cover || {}) },
-              meta: { ...defaultQuoteData.meta, ...(parsed.meta || {}) },
-            });
-            const savedId = localStorage.getItem('domberg_quote_autosave_id');
-            if (savedId) setQuoteId(savedId);
-          }
+      const draftType = parsed?.quote_type || 'standard';
+      const base = getDefaultQuoteData(draftType);
+      if (isDraftMeaningful(draftType, parsed, base)) {
+        if (window.confirm('Restore your last unsaved draft?')) {
+          setQuoteData(mergeQuoteData(draftType, parsed));
+          const savedId = localStorage.getItem('domberg_quote_autosave_id');
+          if (savedId) setQuoteId(savedId);
         }
       }
     } catch (e) {}
@@ -146,7 +137,7 @@ const QuoteGenerator = () => {
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const safeName = (quoteData.cover.projectName || 'quote')
+    const safeName = getDisplayName(quoteData)
       .replace(/[^a-zA-Z0-9 _-]/g, '')
       .replace(/\s+/g, '-')
       .toLowerCase();
@@ -169,19 +160,17 @@ const QuoteGenerator = () => {
         let text = String(evt.target.result || '');
         if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
         const data = JSON.parse(text.trim());
-        if (typeof data !== 'object' || !data.items) {
+        const importType = data?.quote_type || 'standard';
+        const hasMinimalShape =
+          importType === 'standard' || importType === 'appliance'
+            ? Array.isArray(data?.items)
+            : !!data?.client;
+        if (typeof data !== 'object' || !hasMinimalShape) {
           window.alert('That JSON does not look like a Domberg quote.');
           return;
         }
         if (window.confirm('Replace the current quote with the imported data?')) {
-          setQuoteData({
-            ...defaultQuoteData,
-            ...data,
-            aboutPage: { ...defaultQuoteData.aboutPage, ...(data.aboutPage || {}) },
-            pricing: { ...defaultQuoteData.pricing, ...(data.pricing || {}) },
-            cover: { ...defaultQuoteData.cover, ...(data.cover || {}) },
-            meta: { ...defaultQuoteData.meta, ...(data.meta || {}) },
-          });
+          setQuoteData(mergeQuoteData(importType, data));
         }
       } catch (err) {
         window.alert('Import failed: ' + err.message);
@@ -196,6 +185,8 @@ const QuoteGenerator = () => {
   // current schedule — matches the extractor skill's output of {items:[{name, sub, specs}]}.
   // Price/qty/images are left at defaults since the extractor deliberately doesn't
   // touch pricing or photos — you fill price/qty and drop in photos afterward.
+  // Standard-only: the extractor's output shape doesn't match Appliance/Flooring/
+  // Windows items, so the button is only shown for Standard quotes.
   const handleImportExtractorClick = () => extractorFileInputRef.current?.click();
 
   const handleImportExtractorFile = (e) => {
@@ -245,16 +236,22 @@ const QuoteGenerator = () => {
 
   const handleNewQuote = () => {
     if (window.confirm('Start a fresh quote? Unsaved changes will be lost.')) {
-      setQuoteData(defaultQuoteData);
-      setQuoteId(null);
-      navigate('/');
-      getNextQuoteReference().then((ref) => {
-        setQuoteData((prev) => ({
-          ...prev,
-          meta: { ...prev.meta, reference: ref },
-        }));
-      });
+      setShowNewModal(true);
     }
+  };
+
+  const handleCreateNew = (newType) => {
+    setShowNewModal(false);
+    setQuoteData(getDefaultQuoteData(newType));
+    setQuoteId(null);
+    navigate('/');
+    const refField = newType === 'standard' ? 'reference' : 'quoteNo';
+    getNextQuoteReference().then((ref) => {
+      setQuoteData((prev) => ({
+        ...prev,
+        meta: { ...prev.meta, [refField]: ref },
+      }));
+    });
   };
 
   const handleAddItem = () => {
@@ -274,6 +271,11 @@ const QuoteGenerator = () => {
     setQuoteData({ ...quoteData, items: [...quoteData.items, newItem] });
   };
 
+  const handleAddApplianceItem = () => {
+    const newItem = { id: Date.now(), matNo: '', desc: '', link: '', qty: 1, listPrice: 0 };
+    setQuoteData({ ...quoteData, items: [...quoteData.items, newItem] });
+  };
+
   const toggleAboutPage = () => {
     setQuoteData({
       ...quoteData,
@@ -287,17 +289,27 @@ const QuoteGenerator = () => {
   const aboutEnabled = quoteData.aboutPage?.enabled ?? false;
 
   // -------------------- Missing-info check (persistent bottom-left status) --------------------
-  const itemsMissingPrice = quoteData.items.filter((i) => !Number(i.price)).length;
-  const itemsMissingImages = quoteData.items.filter(
-    (i) => !i.images || (!i.images.main && !i.images.detail1 && !i.images.detail2)
-  ).length;
   const warnings = [];
-  if (itemsMissingPrice > 0) {
-    warnings.push(`${itemsMissingPrice} item${itemsMissingPrice === 1 ? '' : 's'} missing price`);
+  if (type === 'standard') {
+    const itemsMissingPrice = quoteData.items.filter((i) => !Number(i.price)).length;
+    const itemsMissingImages = quoteData.items.filter(
+      (i) => !i.images || (!i.images.main && !i.images.detail1 && !i.images.detail2)
+    ).length;
+    if (itemsMissingPrice > 0) {
+      warnings.push(`${itemsMissingPrice} item${itemsMissingPrice === 1 ? '' : 's'} missing price`);
+    }
+    if (itemsMissingImages > 0) {
+      warnings.push(`${itemsMissingImages} item${itemsMissingImages === 1 ? '' : 's'} missing photos`);
+    }
+  } else if (type === 'appliance') {
+    const itemsMissingPrice = quoteData.items.filter((i) => !Number(i.listPrice)).length;
+    if (itemsMissingPrice > 0) {
+      warnings.push(`${itemsMissingPrice} item${itemsMissingPrice === 1 ? '' : 's'} missing price`);
+    }
   }
-  if (itemsMissingImages > 0) {
-    warnings.push(`${itemsMissingImages} item${itemsMissingImages === 1 ? '' : 's'} missing photos`);
-  }
+
+  const FormComponent = FORM_BY_TYPE[type] || QuoteForm;
+  const PreviewComponent = PREVIEW_BY_TYPE[type] || QuotePreview;
 
   return (
     <div className="quote-generator">
@@ -308,22 +320,34 @@ const QuoteGenerator = () => {
         <button className="tb-btn" onClick={handleNewQuote} title="Start a fresh quote">
           New
         </button>
-        <button className="tb-btn" onClick={handleAddItem} title="Add an item to the schedule">
-          + Item
-        </button>
+
+        {type === 'standard' && (
+          <button className="tb-btn" onClick={handleAddItem} title="Add an item to the schedule">
+            + Item
+          </button>
+        )}
+        {type === 'appliance' && (
+          <button className="tb-btn" onClick={handleAddApplianceItem} title="Add an item to the schedule">
+            + Item
+          </button>
+        )}
+
         <button className="tb-btn" onClick={() => navigate('/history')} title="Browse saved quotes">
           History
         </button>
 
-        <span className="tb-sep" />
-
-        <button
-          className={`tb-btn${aboutEnabled ? ' tb-btn--on' : ''}`}
-          onClick={toggleAboutPage}
-          title="Show or hide the About Domberg page in the quote"
-        >
-          {aboutEnabled ? '✓ About Page' : 'About Page'}
-        </button>
+        {type === 'standard' && (
+          <>
+            <span className="tb-sep" />
+            <button
+              className={`tb-btn${aboutEnabled ? ' tb-btn--on' : ''}`}
+              onClick={toggleAboutPage}
+              title="Show or hide the About Domberg page in the quote"
+            >
+              {aboutEnabled ? '✓ About Page' : 'About Page'}
+            </button>
+          </>
+        )}
 
         <span className="tb-sep" />
 
@@ -341,13 +365,15 @@ const QuoteGenerator = () => {
           style={{ display: 'none' }}
         />
 
-        <button
-          className="tb-btn"
-          onClick={handleImportExtractorClick}
-          title="Drop in the JSON from the quote-extractor skill to add items"
-        >
-          Import Items (Extractor)
-        </button>
+        {type === 'standard' && (
+          <button
+            className="tb-btn"
+            onClick={handleImportExtractorClick}
+            title="Drop in the JSON from the quote-extractor skill to add items"
+          >
+            Import Items (Extractor)
+          </button>
+        )}
         <input
           ref={extractorFileInputRef}
           type="file"
@@ -393,7 +419,7 @@ const QuoteGenerator = () => {
 
       <div className="generator-container">
         <div className="form-panel">
-          <QuoteForm quoteData={quoteData} onChange={setQuoteData} />
+          <FormComponent quoteData={quoteData} onChange={setQuoteData} totals={totals} variant={type} />
         </div>
 
         <div className="preview-panel">
@@ -402,7 +428,7 @@ const QuoteGenerator = () => {
             <small>· edits appear instantly</small>
           </div>
           <div className="preview-content">
-            <QuotePreview quoteData={quoteData} totals={totals} />
+            <PreviewComponent quoteData={quoteData} totals={totals} variant={type} />
           </div>
         </div>
       </div>
@@ -411,6 +437,10 @@ const QuoteGenerator = () => {
         <div className="status-bar status-bar--warning">
           ⚠ {warnings.join(' · ')}
         </div>
+      )}
+
+      {showNewModal && (
+        <NewQuoteModal onPick={handleCreateNew} onClose={() => setShowNewModal(false)} />
       )}
     </div>
   );
