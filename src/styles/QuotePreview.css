@@ -26,6 +26,10 @@
   gap: 10px;
 }
 
+.quote-preview .hl-orange {
+  color: var(--accent);
+}
+
 .quote-preview *,
 .quote-preview *::before,
 .quote-preview *::after {

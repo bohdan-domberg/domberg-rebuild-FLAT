@@ -530,7 +530,7 @@
   background: #f2eee8;
 }
 
-/* -------------------- Rich text toolbar (B / I / U) -------------------- */
+/* -------------------- Rich text toolbar (B / I / U / orange) -------------------- */
 
 /* Toolbar sits between the field label and the textarea */
 .rich-toolbar {
@@ -571,6 +571,19 @@
 .rt-btn:active {
   background: #ea6406;
   border-color: #ea6406;
+  color: white;
+}
+
+.rt-btn-orange {
+  color: #ea6406;
+  font-weight: 700;
+}
+
+.rt-btn-orange:hover {
+  color: #ea6406;
+}
+
+.rt-btn-orange:active {
   color: white;
 }
 
