@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listQuotes, deleteQuote } from '../lib/quotesApi';
+import { listQuotes, deleteQuote, duplicateQuote } from '../lib/quotesApi';
 import { QUOTE_TYPES } from '../lib/quoteTypes';
 import '../styles/HistoryDashboard.css';
 
@@ -26,6 +26,8 @@ const HistoryDashboard = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [duplicatingId, setDuplicatingId] = useState(null);
+  const duplicatingRef = useRef(false);
   const navigate = useNavigate();
 
   const load = async (term = '') => {
@@ -59,6 +61,21 @@ const HistoryDashboard = () => {
       setQuotes((prev) => prev.filter((q) => q.id !== id));
     } catch (err) {
       window.alert(err.message);
+    }
+  };
+
+  const handleDuplicate = async (id, e) => {
+    e.stopPropagation();
+    if (duplicatingRef.current) return;
+    duplicatingRef.current = true;
+    setDuplicatingId(id);
+    try {
+      const newId = await duplicateQuote(id);
+      navigate(`/?quote=${newId}`);
+    } catch (err) {
+      window.alert(err.message);
+      duplicatingRef.current = false;
+      setDuplicatingId(null);
     }
   };
 
@@ -124,13 +141,23 @@ const HistoryDashboard = () => {
                     </td>
                     <td>{new Date(q.updated_at).toLocaleString('en-GB')}</td>
                     <td>
-                      <button
-                        className="history-delete"
-                        onClick={(e) => handleDelete(q.id, e)}
-                        title="Delete quote"
-                      >
-                        ✕
-                      </button>
+                      <div className="history-actions">
+                        <button
+                          className="history-duplicate"
+                          onClick={(e) => handleDuplicate(q.id, e)}
+                          disabled={!!duplicatingId}
+                          title="Duplicate quote"
+                        >
+                          {duplicatingId === q.id ? 'Duplicating…' : 'Duplicate'}
+                        </button>
+                        <button
+                          className="history-delete"
+                          onClick={(e) => handleDelete(q.id, e)}
+                          title="Delete quote"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

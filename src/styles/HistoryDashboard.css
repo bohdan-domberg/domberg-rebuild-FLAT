@@ -155,6 +155,33 @@
   color: #1a6a9a;
 }
 
+.history-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.history-duplicate {
+  border: 1px solid #d8d0c2;
+  background: #fff;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #2c2c2c;
+}
+
+.history-duplicate:hover:not(:disabled) {
+  background: #faf7f2;
+}
+
+.history-duplicate:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .history-delete {
   border: none;
   background: transparent;
