@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { prepareDuplicatedQuoteData } from './duplicateQuoteData';
 
 /**
  * Quotes are stored as a single jsonb `data` column matching the app's
@@ -80,6 +81,19 @@ export async function saveQuote({ id, quoteData, status = 'draft' }) {
 export async function deleteQuote(id) {
   const { error } = await supabase.from('quotes').delete().eq('id', id);
   if (error) throw new Error(`Delete failed: ${error.message}`);
+}
+
+/**
+ * Clones a saved quote into a new draft row: new UUID, next DE26-###
+ * reference, today's date (and +30-day validity when that field exists).
+ * Images/attachments keep their existing Storage URLs.
+ */
+export async function duplicateQuote(id) {
+  const row = await loadQuote(id);
+  const quoteType = row.data?.quote_type || row.quote_type || 'standard';
+  const nextRef = await getNextQuoteReference();
+  const quoteData = prepareDuplicatedQuoteData(row.data, { nextRef, quoteType });
+  return saveQuote({ quoteData, status: 'draft' });
 }
 
 /**
