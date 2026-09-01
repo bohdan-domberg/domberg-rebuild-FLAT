@@ -14,7 +14,7 @@ import '../styles/QuoteForm.css';
  */
 
 // -------------------- RichField toolbar --------------------
-// Wraps a textarea with a B / I / U toolbar.
+// Wraps a textarea with a B / I / U / orange toolbar.
 // When text is selected, it wraps the selection in the tag.
 // When nothing is selected, it inserts the tag pair with cursor inside.
 const RichField = ({ label, hint, value, onChange, rows = 2, fieldRef }) => {
@@ -113,6 +113,17 @@ const RichField = ({ label, hint, value, onChange, rows = 2, fieldRef }) => {
           }}
         >
           <u>U</u>
+        </button>
+        <button
+          type="button"
+          className="rt-btn rt-btn-orange"
+          title="Orange"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            applyTag('<span class="hl-orange">', '</span>');
+          }}
+        >
+          A
         </button>
       </div>
       <textarea
@@ -1129,7 +1140,7 @@ const Field = ({ label, hint, children }) => (
   </label>
 );
 
-// --- Spec value field: inline B/I/U toolbar without the label wrapper ---
+// --- Spec value field: inline B/I/U/orange toolbar without the label wrapper ---
 // Used inside the spec-edit-row grid where the label column is separate.
 const SpecValueField = ({ value, onChange }) => {
   const textareaRef = useRef(null);
@@ -1183,6 +1194,10 @@ const SpecValueField = ({ value, onChange }) => {
         <button type="button" className="rt-btn" title="Underline — Ctrl+U"
           onMouseDown={(e) => { e.preventDefault(); applyTag('<u>', '</u>'); }}>
           <u>U</u>
+        </button>
+        <button type="button" className="rt-btn rt-btn-orange" title="Orange"
+          onMouseDown={(e) => { e.preventDefault(); applyTag('<span class="hl-orange">', '</span>'); }}>
+          A
         </button>
       </div>
       <textarea

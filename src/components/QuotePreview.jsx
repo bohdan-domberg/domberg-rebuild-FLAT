@@ -80,7 +80,10 @@ const QuotePreview = forwardRef(({ quoteData, totals }, ref) => {
                 {aboutPage.headline || 'Craftsmanship Since 1947'}
               </h2>
               {aboutPage.intro && (
-                <p className="about-intro">{aboutPage.intro}</p>
+                <p
+                  className="about-intro"
+                  dangerouslySetInnerHTML={{ __html: aboutPage.intro }}
+                />
               )}
               <div className="about-blocks">
                 {(aboutPage.blocks || []).map((block, i) => (
